@@ -6,6 +6,7 @@ import {
   Fetch_Online_Response,
   Source_Url,
   Retention_Days,
+  Verify_Flingster_Response_Identity,
 } from "../scripts/collect.mjs";
 
 function Build_Fixture(Country_Total = 26, Count_Override = undefined) {
@@ -76,4 +77,33 @@ Test("uses real server shape and returns numeric snapshot", async () => {
   const Result = await Fetch_Online_Response(Mock_Fetch);
   Assert.equal(Result.n, 351);
   Assert.ok(Result.t > 1000000000);
+});
+
+
+Test("rejects convincing country counts with fallback three-member identity",()=>{
+  const Countries=Object.fromEntries(Array.from({length:26},(_,Index)=>[
+    String.fromCharCode(65,65+Index),Index+1]));
+  const Payload={ALL:351,...Countries,Members:3,Tags:Array.from({length:20},(_,Index)=>"tag"+Index)};
+  const Html='<script>{"xhrl":"online","xhrd":'+JSON.stringify(Payload)+',"xhrh":{}}</script>';
+  Assert.throws(()=>Parse_Online_Response(Html),/Fallback|invalid registered-member/);
+});
+
+Test("verifies both Flingster app identity and metadata instead of HTTP 200 alone",async()=>{
+  const Config={Name:"Flingster",...Object.fromEntries(
+    Array.from({length:30},(_,Index)=>["Setting_"+Index,true]))};
+  const Metadata={ALL:0,Members:33579063,Tags:Array.from({length:17},(_,Index)=>"tag"+Index)};
+  const Mock_Fetch=async(Url)=>({
+    ok:true,json:async()=>Url.includes("/config?")?Config:Metadata,
+  });
+  const Identity=await Verify_Flingster_Response_Identity(Mock_Fetch);
+  Assert.equal(Identity.Name,"Flingster");
+  Assert.equal(Identity.Members,33579063);
+  const Fallback=async(Url)=>({
+    ok:true,json:async()=>Url.includes("/config?")?Config:{...Metadata,Members:3},
+  });
+  await Assert.rejects(Verify_Flingster_Response_Identity(Fallback),/Untrusted|fallback/);
+  const Mismatch=async(Url)=>({
+    ok:true,json:async()=>Url.includes("/config?")?{...Config,Name:"Shagle"}:Metadata,
+  });
+  await Assert.rejects(Verify_Flingster_Response_Identity(Mismatch),/Untrusted|fallback/);
 });

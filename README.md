@@ -43,6 +43,38 @@ Country details also compare **Adult versus Default country share of each separa
 
 Population reference values come from the [World Bank's Population, total indicator](https://data.worldbank.org/indicator/SP.POP.TOTL), refreshed approximately monthly through the existing GitHub Actions collector. Countries missing official data show an unavailable state rather than a fabricated population.
 
+## Network Explorer and response identity
+
+The dashboard includes a compact expandable **Network Explorer** covering seven
+brands: Flingster, DirtyRoulette, Chatrandom, Camsurf, Shagle, Camgo, and Chatspin.
+
+- Six brands have validated technical activity feeds. DirtyRoulette is labeled
+  as a **shared Flingster Adult-feed alias**, not an independent seventh pool.
+- Default and provider-reported Combined (technical room: Default,Adult) can be
+  compared per brand. Their reported counts may overlap and **must never be added
+  together to infer unique people**.
+- Country-data SHA-256 fingerprints group exactly matching geographic snapshots.
+  Similar worldwide totals alone do not prove identical datasets.
+- The existing 30-minute GitHub workflow also collects compact network snapshots,
+  and a daily verified configuration snapshot tracks selected feature flags,
+  premium labels, token settings, and public interest suggestions.
+  Volatile visitor-region identifiers and member counters are not treated as
+  configuration changes.
+- The collector requires a known application name, expected brand identity,
+  a valid worldwide-country sum, and metadata that is not the three-member fallback.
+  The lightweight onlineCountries JSON reports ALL:0 and is used only as an
+  identity/metadata check, never a usable live online counter.
+- Temporarily unreachable brands are marked unavailable instead of reported as zero.
+  The optional network collector does not replace the verified Flingster country
+  history and does not force-push when Git has concurrent changes.
+- Chatspin reward figures are configuration values, not proof of redemption or
+  of free gender-filter access. Historic visit estimates are separate from
+  live online figures.
+
+The shared data does not prove a common matchmaking queue or independent
+brand populations. The public feeds still do not show verified live gender,
+interest, or waiting-user totals.
+
 ## Collection
 
 The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.

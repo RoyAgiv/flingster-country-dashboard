@@ -18,6 +18,10 @@ export function Parse_Online_Response(Html_Text, Timestamp_Seconds = Math.floor(
   if (!Number.isSafeInteger(Payload.ALL) || Payload.ALL <= 0) {
     throw new Error("Missing or invalid worldwide total");
   }
+  if (Object.hasOwn(Payload, "Members") &&
+      (!Number.isSafeInteger(Payload.Members) || Payload.Members < 1000)) {
+    throw new Error("Fallback or invalid registered-member counter");
+  }
   const Country_Entries = Object.entries(Payload)
     .filter(([Country_Code, Count]) => /^[A-Z]{2}$/.test(Country_Code) && Number.isSafeInteger(Count) && Count >= 0)
     .sort(([First_Code], [Second_Code]) => First_Code.localeCompare(Second_Code));
@@ -79,6 +83,7 @@ export async function Fetch_Online_Response(Fetch_Function = fetch, Room = "Adul
         headers: {
           "user-agent": "Mozilla/5.0 (compatible; CountryPulse/1.2)",
           referer: "https://flingster.com/",
+          "x-origin": "flingster.com",
           accept: "text/html,*/*;q=0.8",
         },
       });
@@ -93,9 +98,38 @@ export async function Fetch_Online_Response(Fetch_Function = fetch, Room = "Adul
   throw new Error("Could not collect validated " + Room + " counts: " + (Last_Error?.message || "unknown error"));
 }
 
+export async function Verify_Flingster_Response_Identity(Fetch_Function = fetch) {
+  const Headers = {
+    "user-agent": "Mozilla/5.0 (compatible; CountryPulse/1.2)",
+    "x-origin": "flingster.com",
+    referer: "https://flingster.com/",
+    accept: "application/json,*/*;q=0.8",
+  };
+  const Fetch_Metadata = async (Url) => {
+    const Response = await Fetch_Function(Url, {
+      method:"GET",headers:Headers,signal:AbortSignal.timeout(16000),
+    });
+    if (!Response.ok) throw Error("Identity endpoint returned HTTP " + Response.status);
+    return Response.json();
+  };
+  const [Config, Metadata] = await Promise.all([
+    Fetch_Metadata("https://rest.flingster.com/config?lang=en"),
+    Fetch_Metadata("https://rest.flingster.com/onlineCountries?lang=en"),
+  ]);
+  if (!Config || Config.Name !== "Flingster" || Object.keys(Config).length < 20 ||
+      !Metadata || Metadata.ALL !== 0 ||
+      !Number.isSafeInteger(Metadata.Members) || Metadata.Members < 1000 ||
+      !Array.isArray(Metadata.Tags) || Metadata.Tags.length < 5) {
+    throw Error("Untrusted or fallback Flingster response identity");
+  }
+  return { Name:Config.Name, Members:Metadata.Members };
+}
+
 export async function Collect_Once() {
   const Raw_History = await readFile(History_Path, "utf8");
   const Existing_History = JSON.parse(Raw_History);
+  // A valid HTTP status alone is not identity proof: reject the ALL:0, Members:3 fallback.
+  const Verified_Identity = await Verify_Flingster_Response_Identity();
   // One collector for every pool. No per-country proxies or platform-specific aliases.
   const [Adult_Snapshot, Default_Snapshot, Combined_Snapshot] = await Promise.all([
     Fetch_Online_Response(fetch, "Adult"),
@@ -125,6 +159,10 @@ export async function Collect_Once() {
     const Query = Replica_Queries[Index];
     Checks[Query.Room].push(Summarize_Source(Query.Host_Name, Result.value));
   });
+  if (!Number.isSafeInteger(Adult_Snapshot.members) ||
+      Math.abs(Adult_Snapshot.members - Verified_Identity.Members) / Verified_Identity.Members > 0.02) {
+    throw Error("Flingster membership does not match verified brand metadata");
+  }
   const Incoming_Snapshot = {
     ...Adult_Snapshot,
     rooms: {

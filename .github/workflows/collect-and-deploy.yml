@@ -35,6 +35,10 @@ jobs:
       - name: Capture one public country-count snapshot
         run: node scripts/collect.mjs
 
+      - name: Capture brand network activity and daily configuration
+        run: node scripts/collect-network.mjs
+        continue-on-error: true
+
       - name: Refresh World Bank population when older than 30 days
         run: node scripts/update-population.mjs
         continue-on-error: true
@@ -43,13 +47,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- data/history.json data/population.json; then
+          if git diff --quiet -- data/history.json data/population.json data/network.json; then
             echo "No new history or population update; no commit needed."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- data/history.json data/population.json
+          git add -- data/history.json data/population.json data/network.json
           git commit -m "Record country counts ($(date -u +%Y-%m-%dT%H:%MZ))"
           # Never force-push, reset, or overwrite another agent's updates.
           # On a non-fast-forward race, fail so the next scheduled run can retry safely.
