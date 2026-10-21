@@ -1,4 +1,5 @@
 import { Aggregate_Hourly, Compare_Day_Over_Day } from "./insights-utils.mjs";
+import { Get_Pool_Snapshots, Get_Pool_Reading, Calculate_Weekend_Average } from "./trends-utils.mjs";
 
 const Format_Number = new Intl.NumberFormat("en-US");
 const Browser_Timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -10,6 +11,7 @@ const Country_Drawer = document.createElement("aside");
 const Country_Table = document.getElementById("Country_Table");
 const Top_Chart = document.getElementById("Top_Chart");
 let Historical_Snapshots = [];
+let Selected_Pool = "Adult";
 let Current_Countries = [];
 let Current_Total = 0;
 let Selected_Country_Code = null;
@@ -191,11 +193,12 @@ function Render_Country() {
   if (!Selected_Country_Code) return;
   const Country = Current_Countries.find((Item) => Item.Code === Selected_Country_Code);
   const Timezone = Selected_Timezone === "utc" ? "UTC" : Browser_Timezone;
-  const Insight = Aggregate_Hourly(Historical_Snapshots, Selected_Country_Code, Timezone, Selected_Period);
+  const Pool_Snapshots = Get_Pool_Snapshots(Historical_Snapshots, Selected_Pool);
+  const Insight = Aggregate_Hourly(Pool_Snapshots, Selected_Country_Code, Timezone, Selected_Period);
   const Percentage = Country && Current_Total ? (Country.Count / Current_Total * 100).toFixed(2) + "% of worldwide feed" : "No current reading";
   Set_Text("Insight_Flag", Country_Flag(Selected_Country_Code));
   Set_Text("Insight_Name", Country_Name(Selected_Country_Code));
-  Set_Text("Insight_Code", Selected_Country_Code + " · " + Percentage);
+  Set_Text("Insight_Code", Selected_Country_Code + " · " + Selected_Pool + " · " + Percentage);
   Set_Text("Insight_Now", Country ? Format_Number.format(Country.Count) : "—");
   Set_Text("Insight_Average", Insight.Average_Count === null ? "—" : Format_Number.format(Insight.Average_Count));
   Set_Text("Insight_Peak", Insight.Maximum_Count === null ? "—" : Format_Number.format(Insight.Maximum_Count));
@@ -214,6 +217,30 @@ function Render_Country() {
   Set_Text("Insight_Coverage", Coverage + "% coverage of selected period · " + Insight.Sample_Count + " readings");
   Render_Trend(Insight.Samples);
   Render_Hours(Insight);
+  const Weekend_Data = Calculate_Weekend_Average(Historical_Snapshots, Selected_Country_Code, Selected_Pool);
+  Set_Text("Insight_Weekend", Weekend_Data ?
+    "Weekdays avg " + Format_Number.format(Weekend_Data.Weekday) +
+    " · Weekends avg " + Format_Number.format(Weekend_Data.Weekend) + " (UTC)" :
+    "Weekday vs weekend analysis starts after more days are recorded.");
+  const Comparison = document.getElementById("Insight_Pool_Compare");
+  Comparison.replaceChildren();
+  const Latest_Pool_Snapshot = Historical_Snapshots.slice().reverse().find((Snapshot) =>
+    Snapshot.rooms?.Default?.c && Snapshot.rooms?.Combined?.c);
+  for (const Pool_Name of ["Adult", "Default", "Combined"]) {
+    const Reading = Latest_Pool_Snapshot && Get_Pool_Reading(Latest_Pool_Snapshot, Pool_Name);
+    const Entry = document.createElement("div");
+    Entry.className = "Insight_Pool_Cell";
+    const Label = document.createElement("label");
+    Label.textContent = Pool_Name;
+    const Value = document.createElement("strong");
+    Value.textContent = Reading && Number.isSafeInteger(Reading.c[Selected_Country_Code]) ?
+      Format_Number.format(Reading.c[Selected_Country_Code]) : "—";
+    Entry.append(Label, Value);
+    Comparison.append(Entry);
+  }
+  Set_Text("Insight_Pool_Time", Latest_Pool_Snapshot ?
+    "Last saved across pools · " + new Date(Latest_Pool_Snapshot.t * 1000).toLocaleString() :
+    "Cross-pool comparisons begin with the first new multi-pool snapshot.");
   Update_Star();
 }
 
@@ -262,6 +289,8 @@ async function Load_History() {
         Snapshot.c && typeof Snapshot.c === "object")
       .sort((First, Second) => First.t - Second.t);
     History_Ready = true;
+    window.CountryPulse_History = Historical_Snapshots;
+    window.dispatchEvent(new CustomEvent("countrypulse:history", { detail: { Historical_Snapshots } }));
     Update_History_Status();
     if (Selected_Country_Code) Render_Country();
   } catch (Error_Object) {
@@ -314,6 +343,17 @@ function Create_Interface() {
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>Best hours on average</h3><span class="Insight_Mini_Label" id="Insight_Hours_Label"></span></div><div class="Insight_Peak_Cards" id="Insight_Peaks"></div><div class="Insight_Hour_Grid" id="Insight_Hours"></div><div class="Insight_Disclaimer"><span aria-hidden="true">ⓘ</span><span id="Insight_Quality"></span></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>History coverage</h3><span class="Insight_Mini_Label">Goal: ~2 readings/hour</span></div><div class="Insight_Mini_Label" id="Insight_Coverage"></div><div class="Insight_Sample_Progress"><span id="Insight_Coverage_Bar"></span></div><div class="Insight_Disclaimer">Stored automatically about every 30 minutes, subject to GitHub scheduling delays. 45-day rolling storage. Averages reflect unverified site-reported counts.</div></div>' +
     '</div>';
+  const Comparison_Block = document.createElement("div");
+  Comparison_Block.className = "Insight_Pool_Compare";
+  Comparison_Block.id = "Insight_Pool_Compare";
+  const Comparison_Age = document.createElement("div");
+  Comparison_Age.id = "Insight_Pool_Time";
+  Comparison_Age.className = "Insight_Pool_Time";
+  const Weekend_Label = document.createElement("div");
+  Weekend_Label.id = "Insight_Weekend";
+  Weekend_Label.className = "Insight_Change";
+  Country_Drawer.querySelector(".Insight_Stats").after(Comparison_Block, Comparison_Age);
+  Country_Drawer.querySelector("#Insight_Hours").after(Weekend_Label);
   document.body.append(Drawer_Backdrop, Country_Drawer);
 
   document.getElementById("Insight_Close").addEventListener("click", Close_Country);
@@ -355,8 +395,18 @@ function Create_Interface() {
   });
   window.addEventListener("countrypulse:data", (Event_Object) => {
     if (!Event_Object.detail || !Array.isArray(Event_Object.detail.Country_Rows)) return;
+    Selected_Pool = Event_Object.detail.Room || "Adult";
     Current_Countries = Event_Object.detail.Country_Rows;
     Current_Total = Event_Object.detail.Online_Total;
+    if (Selected_Country_Code) Render_Country();
+  });
+  window.addEventListener("countrypulse:open-country", (Event_Object) => {
+    if (Event_Object.detail?.Code) Open_Country(Event_Object.detail.Code);
+  });
+  window.addEventListener("countrypulse:pool-changing", (Event_Object) => {
+    Selected_Pool = Event_Object.detail?.Room || "Adult";
+    Current_Countries = [];
+    Current_Total = 0;
     if (Selected_Country_Code) Render_Country();
   });
   Render_Favorites();

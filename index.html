@@ -70,6 +70,7 @@
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition:none!important}}
   </style>
   <link rel="stylesheet" href="./assets/insights.css">
+  <link rel="stylesheet" href="./assets/trends.css">
 </head>
 <body>
   <main class="Shell">
@@ -82,7 +83,7 @@
       <div>
         <div class="Eyebrow">Online users · Country explorer</div>
         <h1>Where the world <span>connects.</span></h1>
-        <p class="Hero_Text">Explore online-user counts by country reported by the data feed used on both Flingster and DirtyRoulette. No sign-in, code, or browser developer tools required.</p>
+        <p class="Hero_Text">See who is trending, compare activity pools, and discover each country’s busiest hours.</p>
       </div>
       <div class="Refresh_Area">
         <button class="Button" id="Refresh_Button" type="button"><span aria-hidden="true">↻</span> Refresh numbers</button>
@@ -90,11 +91,23 @@
       </div>
     </section>
 
+    <section class="Pool_Toolbar" aria-label="Activity pools">
+      <div class="Pool_Tabs" role="group" aria-label="Reported activity pool">
+        <button type="button" class="Pool_Tab" data-room="Adult" aria-pressed="true">Adult</button>
+        <button type="button" class="Pool_Tab" data-room="Default" aria-pressed="false">Default</button>
+        <button type="button" class="Pool_Tab" data-room="Combined" aria-pressed="false">Combined</button>
+      </div>
+      <div class="Pool_Qualifier">
+        <span class="Quality_Signal" id="Quality_Signal">Reading quality…</span>
+        <details><summary>About the pools</summary><p>Adult is the feed used on tested Flingster and DirtyRoulette pages. Default is unidentified. Combined is a provider-reported request, not a sum or verified count of unique people.</p></details>
+      </div>
+    </section>
+
     <section class="Stats" aria-label="At a glance">
-      <article class="Card"><div class="Card_Label">Reported online worldwide</div><div class="Card_Value Accent" id="World_Total">—</div><div class="Card_Note">Shared Flingster data feed</div></article>
+      <article class="Card"><div class="Card_Label">Reported online worldwide</div><div class="Card_Value Accent" id="World_Total">—</div><div class="Card_Note" id="Global_Change">Waiting for history</div></article>
       <article class="Card"><div class="Card_Label">Countries & territories</div><div class="Card_Value" id="Country_Total">—</div><div class="Card_Note">Locations with reported counts</div></article>
       <article class="Card"><div class="Card_Label">Israel <span aria-hidden="true">🇮🇱</span></div><div class="Card_Value" id="Israel_Total">—</div><div class="Card_Note" id="Israel_Percent">Share of reported worldwide total</div></article>
-      <article class="Card"><div class="Card_Label">Largest country</div><div class="Card_Value Small" id="Top_Country">—</div><div class="Card_Note" id="Top_Country_Note">Most reported online users</div></article>
+      <article class="Card"><div class="Card_Label">Reported members</div><div class="Card_Value Small" id="Members_Total">—</div><div class="Card_Note Member_Growth" id="Members_Growth">Tracking member growth</div></article>
     </section>
 
     <section class="Content_Grid">
@@ -105,17 +118,54 @@
         </div>
         <div class="Bars" id="Top_Chart" aria-live="polite"><div class="Loading"><b></b>Loading the country ranking…</div></div>
       </article>
-      <aside class="Panel">
-        <div class="Panel_Head"><div><h2>One shared source</h2><p class="Subheading">Understanding the two websites</p></div></div>
-        <div class="Compare"><div class="Site_Pill">Flingster</div><div class="Equals">=</div><div class="Site_Pill">DirtyRoulette</div></div>
-        <div class="Explainer">
-          <p>Both websites load the <strong>same Flingster-hosted country-count endpoint</strong>.</p>
-          <p>These numbers <strong>cannot distinguish</strong> DirtyRoulette visitors from Flingster visitors or tell whether people overlap.</p>
+      <aside class="Panel Trends_Panel" aria-label="Trending countries">
+        <div class="Panel_Head">
+          <div><h2>Trending countries</h2><p class="Subheading" id="Trend_Status">Waiting for history</p></div>
+          <div class="Trend_Head_Controls">
+            <select id="Trend_Window" aria-label="Trending comparison window">
+              <option value="recent">Last saved</option><option value="1h">1 hour</option>
+              <option value="24h">24 hours</option><option value="7d">7 days</option>
+            </select>
+          </div>
         </div>
-        <div class="Note" style="margin-top:20px"><strong>Important:</strong> These are site-reported figures, not audited counts of real, unique people. Some figures may be cached, rounded, or estimated.</div>
-        <p class="Subheading" style="margin-top:17px">Data: <a href="https://rest.flingster.com/xhr.html?v=2&amp;online=1&amp;room=Adult&amp;config=1&amp;lang=en" target="_blank" rel="noreferrer">Flingster's public country feed ↗</a></p>
+        <div class="Trend_Columns">
+          <section class="Trend_Column" aria-label="Rising countries">
+            <div class="Trend_Label">↗ Rising</div>
+            <div class="Trend_List" id="Trend_Rises"><div class="Trend_Empty">Loading…</div></div>
+          </section>
+          <section class="Trend_Column" aria-label="Falling countries">
+            <div class="Trend_Label">↘ Falling</div>
+            <div class="Trend_List" id="Trend_Falls"><div class="Trend_Empty">Loading…</div></div>
+          </section>
+        </div>
+        <p class="Trend_Foot" id="Trend_Window_Label">Comparisons use snapshots from the selected pool.</p>
+        <p class="Trend_Foot" id="Trend_Quality_Foot"></p>
       </aside>
     </section>
+
+    <details class="Data_Disclosure" id="More_Data">
+      <summary>Explore interests, website traffic &amp; source details</summary>
+      <div class="Data_Inside">
+        <section>
+          <div class="Data_Section_Label" id="Tag_Count">Interest tags</div>
+          <div class="Tag_List" id="Tag_List"></div>
+          <div class="Data_Small">Supported tag names only — not counts of people using them.</div>
+        </section>
+        <section>
+          <div class="Data_Section_Label">Estimated visits · September 2026</div>
+          <div class="Site_Visits">
+            <div><b>13.5M</b><span>Flingster estimated visits</span></div>
+            <div><b>7.62M</b><span>DirtyRoulette estimated visits</span></div>
+          </div>
+          <div class="Data_Small">Historical Semrush estimates of monthly website visits, not live users. <a href="https://www.semrush.com/website/flingster.com/overview/" target="_blank" rel="noopener noreferrer">Semrush ↗</a> · <a href="https://dirtyroulette.com/studies/" target="_blank" rel="noopener noreferrer">DirtyRoulette research ↗</a></div>
+        </section>
+        <section>
+          <div class="Data_Section_Label">How the feed works</div>
+          <div class="Data_Small" id="Data_Meta">Loading site metadata…</div>
+          <div class="Data_Small">No verified public gender, couple, age, city, or per-tag population counts. Site-reported values show strong rounding patterns and may be adjusted.</div>
+        </section>
+      </div>
+    </details>
 
     <section class="Panel" aria-label="All countries">
       <div class="Table_Head">
@@ -143,7 +193,10 @@
     const Number_Formatter = new Intl.NumberFormat("en-US");
     const Percent_Formatter = new Intl.NumberFormat("en-US", {minimumFractionDigits:1, maximumFractionDigits:1});
     const Country_Name_Formatter = new Intl.DisplayNames(["en"], {type:"region"});
-    const Data_Frame = document.getElementById("Data_Frame");
+    let Data_Frame = document.getElementById("Data_Frame");
+    let Selected_Room = "Adult";
+    let Current_Metadata = {};
+    let Adult_Members = null;
     const Refresh_Button = document.getElementById("Refresh_Button");
     const Export_Button = document.getElementById("Export_Button");
     const Search_Input = document.getElementById("Search_Input");
@@ -195,7 +248,12 @@
       Top_Chart.textContent="";
       const Fragment = document.createDocumentFragment();
       for(const Country_Row of Top_Rows){
-        const Row = document.createElement("div"); Row.className="Bar_Row";
+        const Row = document.createElement("div"); Row.className="Bar_Row Country_Clickable";
+        Row.tabIndex=0;
+        Row.role="button";
+        Row.title="Open "+Country_Row.Name+" country insights";
+        Row.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("countrypulse:open-country",{detail:{Code:Country_Row.Code}})));
+        Row.addEventListener("keydown",Event=>{if(Event.key==="Enter"||Event.key===" "){Event.preventDefault();Row.click();}});
         const Label = document.createElement("div"); Label.className="Bar_Country";
         const Flag = document.createElement("span"); Flag.className="Flag"; Flag.textContent=Country_Flag(Country_Row.Code);
         const Name = document.createElement("span"); Name.className="Bar_Country_Name";Name.textContent=Country_Row.Name;Name.title=Country_Row.Name;
@@ -254,6 +312,8 @@
         .sort((First,Second)=>Second.Count-First.Count||First.Name.localeCompare(Second.Name))
         .map((Country_Row,Index)=>({...Country_Row,Rank:Index+1}));
       Online_Total=Payload.ALL;
+      if(Selected_Room==="Adult"&&Number.isSafeInteger(Payload.Members)&&Payload.Members>0)Adult_Members=Payload.Members;
+      document.getElementById("Members_Total").textContent=Number.isSafeInteger(Adult_Members)?Format_Number(Adult_Members):"—";
       Updated_At=new Date();
       Is_Refreshing=false;
       clearTimeout(Timeout_Handle);Refresh_Button.disabled=false;Export_Button.disabled=false;
@@ -262,12 +322,12 @@
       const Israel_Row=Country_Rows.find(Country_Row=>Country_Row.Code==="IL");
       document.getElementById("Israel_Total").textContent=Israel_Row?Format_Number(Israel_Row.Count):"—";
       document.getElementById("Israel_Percent").textContent=Israel_Row?Format_Percent(Israel_Row.Count/Online_Total*100)+" of reported worldwide total":"Not included in latest feed";
-      document.getElementById("Top_Country").textContent=Country_Rows[0].Name;
-      document.getElementById("Top_Country_Note").textContent=Format_Number(Country_Rows[0].Count)+" reported online · "+Format_Percent(Country_Rows[0].Count/Online_Total*100);
+
       document.getElementById("Updated_At").textContent="Checked at "+Updated_At.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
       Set_Status("connected","Source connected");
       Render_Chart();Render_Table();
-      window.dispatchEvent(new CustomEvent("countrypulse:data", { detail: { Country_Rows, Online_Total } }));
+      window.CountryPulse_Data={Country_Rows,Online_Total,Room:Selected_Room,Members:Payload.Members,Adult_Members,Tags:Array.isArray(Payload.Tags)?Payload.Tags:[],Meta:Current_Metadata};
+      window.dispatchEvent(new CustomEvent("countrypulse:data", { detail: window.CountryPulse_Data }));
     }
     function Refresh_Data(){
       if(Is_Refreshing)return;
@@ -276,7 +336,19 @@
       document.getElementById("Updated_At").textContent=Updated_At?"Checking for a new reading…":"Waiting for the first reading";
       clearTimeout(Timeout_Handle);
       Timeout_Handle=setTimeout(()=>Show_Error("The data feed did not respond. Try refreshing again."),16000);
-      Data_Frame.src=Source_Url+"&_country_pulse="+Date.now();
+      const Next_Frame=document.createElement("iframe");
+      Next_Frame.id="Data_Frame";
+      Next_Frame.className="Hidden_Frame";
+      Next_Frame.title="Country statistics source";
+      Next_Frame.setAttribute("aria-hidden","true");
+      Next_Frame.tabIndex=-1;
+      Next_Frame.referrerPolicy="no-referrer";
+      Data_Frame.replaceWith(Next_Frame);
+      Data_Frame=Next_Frame;
+      const Request_Url=new URL(Source_Url);
+      Request_Url.searchParams.set("room",Selected_Room==="Combined"?"Adult,Default":Selected_Room);
+      Request_Url.searchParams.set("_country_pulse",String(Date.now()));
+      Data_Frame.src=Request_Url.toString();
     }
     function Reset_Refresh_Timer(){
       clearInterval(Refresh_Interval);
@@ -290,13 +362,44 @@
       const Csv_Text=Csv_Rows.map(Fields=>Fields.map(Field=>'"'+String(Field).replaceAll('"','""')+'"').join(",")).join("\r\n");
       const Csv_Blob=new Blob([Csv_Text],{type:"text/csv;charset=utf-8"});
       const Download_Url=URL.createObjectURL(Csv_Blob);
-      const Download_Link=document.createElement("a");Download_Link.href=Download_Url;Download_Link.download="country-pulse-"+new Date().toISOString().slice(0,10)+".csv";
+      const Download_Link=document.createElement("a");Download_Link.href=Download_Url;Download_Link.download="country-pulse-"+Selected_Room.toLowerCase()+"-"+new Date().toISOString().slice(0,10)+".csv";
       document.body.append(Download_Link);Download_Link.click();Download_Link.remove();setTimeout(()=>URL.revokeObjectURL(Download_Url),1000);
     }
     window.addEventListener("message",Event=>{
       if(Event.origin!==Source_Origin||Event.source!==Data_Frame.contentWindow)return;
-      if(!Event.data||Event.data.xhrl!=="online")return;
+      if(!Event.data)return;
+      if(Event.data.xhrl==="config"){
+        const Config=Event.data.xhrd||{};
+        Current_Metadata={...Current_Metadata,Site:typeof Config.Name==="string"?Config.Name:"Flingster",
+          Visitor_Country:typeof Config.UserCountry==="string"?Config.UserCountry:undefined,
+          Config_Fields:Object.keys(Config).length};
+        return;
+      }
+      if(Event.data.xhrl!=="online")return;
+      const Headers=Event.data.xhrh||{};
+      if(typeof Headers["x-site"]==="string")Current_Metadata.Site=Headers["x-site"];
+      if(typeof Headers["x-country"]==="string")Current_Metadata.Visitor_Country=Headers["x-country"];
       try{Apply_Data(Event.data.xhrd)}catch(Error){Show_Error("Source returned an invalid country-count response.")}
+    });
+    window.addEventListener("countrypulse:request-state",()=>{
+      if(window.CountryPulse_Data)window.dispatchEvent(new CustomEvent("countrypulse:data",{detail:window.CountryPulse_Data}));
+    });
+    window.addEventListener("countrypulse:select-pool",Event=>{
+      const Room=Event.detail?.Room;
+      if(!["Adult","Default","Combined"].includes(Room)||Room===Selected_Room)return;
+      Selected_Room=Room;
+      Is_Refreshing=false;
+      clearTimeout(Timeout_Handle);
+      Updated_At=null;
+      Online_Total=0;
+      Country_Rows=[];
+      Current_Metadata={};
+      window.CountryPulse_Data=null;
+      for(const Field of ["World_Total","Country_Total","Israel_Total"])document.getElementById(Field).textContent="—";
+      Top_Chart.innerHTML='<div class="Loading"><b></b>Loading the selected pool…</div>';
+      Country_Table.innerHTML='<tr><td colspan="4" class="Table_Empty">Loading countries…</td></tr>';
+      window.dispatchEvent(new CustomEvent("countrypulse:pool-changing",{detail:{Room}}));
+      Refresh_Data();
     });
     Refresh_Button.addEventListener("click",Refresh_Data);
     Export_Button.addEventListener("click",Export_Csv);
@@ -309,5 +412,6 @@
     Refresh_Data();
   </script>
   <script type="module" src="./assets/insights.mjs"></script>
+  <script type="module" src="./assets/trends.mjs"></script>
 </body>
 </html>

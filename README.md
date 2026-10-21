@@ -1,35 +1,35 @@
 # CountryPulse
 
-Live dashboard: https://royagiv.github.io/flingster-country-dashboard/
+**Live dashboard:** https://royagiv.github.io/flingster-country-dashboard/
 
-A dependency-free, mobile-friendly dashboard for the **same public country-count feed** loaded by Flingster and DirtyRoulette. The numbers cannot be distinguished by platform and are not independently audited counts of unique people.
+CountryPulse is a lightweight, searchable dashboard for activity **reported** by public Flingster-hosted endpoints. It is not affiliated with Flingster or DirtyRoulette, and reported numbers should not be represented as independently verified unique users.
 
-## What it does
+## Dashboard
 
-- **Live country search, sorting, top 10 / 25 / 50 / all** and CSV export.
-- Click any country to open a **history drawer** with a time-series graph, recorded average, recorded high, and the best hours based on historical samples.
-- Choose **24 hours, 7 days, or 30 days**; display peak hours in your browser's timezone (the default) or UTC.
-- **Pin favorite countries** for one-click access. Pinned choices stay only in your own browser.
-- A scheduled GitHub Actions workflow **attempts a snapshot every 30 minutes** (07 and 37 minutes past each UTC hour), stores a rolling **45 days** in `data/history.json`, and deploys the updated static site. GitHub's scheduled workflows can run late or be skipped; the dashboard shows coverage.
+- **Adult**, **Default**, or **Combined** technical pools. Adult is the pool used by both tested Flingster and DirtyRoulette pages. The Default pool's site ownership is unknown; Combined is a provider-reported query (`room=Adult,Default`), **not** an arithmetic sum or verified distinct-user total.
+- Country rankings, top 10/25/50/all, search, sort, CSV export, and pinning countries.
+- Rising/falling country cards with absolute and relative changes over the latest saved snapshot, 1 hour, 24 hours, or 7 days. Comparisons always remain **within the same pool**. Low counts (under 25) are excluded from mover rankings to avoid misleading swings.
+- Click countries for saved hourly patterns, activity history, cross-pool **last-saved** counts, and weekday versus weekend averages as sufficient data accumulates.
+- Reported membership with day-over-day change after a comparable full day of data; interest-tag names (not per-tag participation counts).
+- Data-quality notes identify suspicious multiple-of-seven and multiple-of-twelve patterns and repeated saved snapshots. Flags indicate uncertainty, not proof of intentional inflation.
+- An expandable research section contains September 2026 **estimated website visits** from Semrush and links to the historical DirtyRoulette research archive. Website traffic is distinct from simultaneous chat activity.
 
-## Interpreting the historical insights
+## Collection
 
-The site's own public response contains country totals, not a time series or a male/female/couples breakdown. History begins only when we start collecting.
+The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.
 
-An hour must have **at least four samples across two different local days** before it can appear in the top-hours ranking. With three or more observation days and six qualified hour buckets, the dashboard considers its initial coverage usable. It still labels averages as **site-reported, unaudited, and potentially generated/rounded**, never exact real-person counts.
+Each history record retains the original compatible Adult format (`t`, `n`, `c`); newer records also contain `rooms.Default`, `rooms.Combined`, and optional `members` and `tags`. Missing historic pool measurements are **never inferred**.
 
-The country detail view defaults to **your current browser timezone** so you can see when to visit. UTC is also available. Countries with multiple timezones are not assumed to have one single local clock.
+Only the collector writes `data/history.json` in scheduled deployments. GitHub actions commits are non-force; concurrent main changes fail safely rather than overwriting them. Each run builds and deploys the full static page. Pages is configured to use **GitHub Actions** as its deployment source.
 
-## Operations
+**Tests:** `node --test tests/*.test.mjs`
 
-The [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) workflow is both the collector and the GitHub Pages deployment. Use **Actions → CountryPulse · Capture and publish → Run workflow** for an extra snapshot; it will avoid duplicates less than 25 minutes apart.
+**Manual sample:** `node scripts/collect.mjs` (skips samples within 25 minutes of the latest saved reading).
 
-Tests: `node --test tests/*.test.mjs`
+## Interpretation
 
-Manual one-shot capture: `node scripts/collect.mjs`
+Flingster and DirtyRoulette currently use the same Adult country statistics source; those figures do **not** separate websites or genders. The Default pool's origin is unknown. Reported total membership is not additive across pools.
 
-The repository must use **GitHub Pages → Build and deployment → Source: GitHub Actions**, because a commit made using `GITHUB_TOKEN` does not automatically trigger a separate branch-based GitHub Pages build.
+Unusual repeated multiples of 7 and 12 are strong evidence of numerical adjustment or coarse scaling. Country counts, trends, averages, and forecasts should remain explicitly marked **provider-reported estimates**.
 
-The workflow pushes only `data/history.json`, without force-pushing or resetting other people's work, and fails closed if a concurrent remote commit prevents a fast-forward push.
-
-CountryPulse is independent and not affiliated with either website.
+Historical chart comparisons and peak-hour conclusions improve only after enough saved samples and multiple days of coverage. No fabricated values are displayed for missing data.

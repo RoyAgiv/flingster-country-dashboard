@@ -57,7 +57,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/assets _site/data
           cp index.html _site/index.html
-          cp assets/insights.mjs assets/insights-utils.mjs assets/insights.css _site/assets/
+          cp assets/*.mjs assets/*.css _site/assets/
           cp data/history.json _site/data/history.json
           touch _site/.nojekyll
 

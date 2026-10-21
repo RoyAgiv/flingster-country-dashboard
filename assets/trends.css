@@ -1,0 +1,53 @@
+/* CountryPulse activity pools, trends and compact evidence UI */
+.Pool_Toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 17px}
+.Pool_Tabs{display:inline-flex;background:#0d1b29;border:1px solid #345365;border-radius:13px;padding:4px;gap:3px}
+.Pool_Tab{border:0;background:transparent;color:#a2beca;padding:10px 17px;border-radius:9px;font-size:13px;font-weight:750;white-space:nowrap}
+.Pool_Tab[aria-pressed="true"]{background:#244a50;color:#b8fff2;box-shadow:inset 0 0 0 1px #3e807e}
+.Pool_Tab:hover{color:#e1faf4}
+.Pool_Qualifier{font-size:11px;color:#a2b4bf;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.Pool_Qualifier details{position:relative}
+.Pool_Qualifier summary{cursor:pointer;color:#96d6d3}
+.Pool_Qualifier details[open] p{position:absolute;z-index:5;right:0;top:22px;background:#122839;box-shadow:0 15px 35px #0005;border:1px solid #426478;border-radius:11px;padding:14px;max-width:300px;width:260px;font-size:12px;color:#cce0e7;line-height:1.6;margin:0}
+.Quality_Signal{display:inline-flex;align-items:center;gap:5px;border:1px solid #455a61;padding:5px 9px;border-radius:999px;color:#b4c9cd;font-size:11px}
+.Quality_Signal[data-level="warn"]{border-color:#7d6946;color:#eac793}
+.Trends_Panel{min-width:0}
+.Trend_Head_Controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-start;margin-top:2px}
+.Trend_Head_Controls select{min-height:34px;padding:4px 28px 4px 10px;font-size:12px}
+.Trend_Columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.Trend_Column{min-width:0}
+.Trend_Label{font-size:12px;font-weight:850;letter-spacing:.2px;color:#b7d4da;display:flex;justify-content:space-between;align-items:center;gap:7px;margin-bottom:12px}
+.Trend_List{display:grid;gap:6px}
+.Trend_Item{width:100%;background:#142937;border:1px solid transparent;border-radius:10px;padding:9px 10px;display:grid;gap:5px;align-items:start;text-align:left;color:#e5f1f6;transition:border-color .12s,background .12s}
+.Trend_Item:hover{border-color:#45706f;background:#1d3a42}
+.Trend_Title{display:flex;align-items:center;gap:5px;font-weight:700;font-size:12px;min-width:0}
+.Trend_Title span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.Trend_Change{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.Trend_Change.Up{color:#77edb9}.Trend_Change.Down{color:#ffa2a0}
+.Trend_Meta{font-size:10px;color:#8ca6b8;font-variant-numeric:tabular-nums}
+.Trend_Empty{color:#91afbf;font-size:12px;border:1px dashed #345061;border-radius:10px;padding:22px 14px;line-height:1.7}
+.Trend_Foot{font-size:11px;color:#869fac;line-height:1.45;margin-top:15px}
+.Member_Growth{font-size:11px;color:#88dec4}
+.Member_Growth.Negative{color:#e4a6a2}
+.Data_Disclosure{margin:15px 0 8px;border:1px solid #2a4655;background:#102334;border-radius:13px;overflow:hidden}
+.Data_Disclosure summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px;cursor:pointer;padding:14px 17px;color:#c8e3e8;font-size:13px;font-weight:700}
+.Data_Disclosure summary::-webkit-details-marker{display:none}
+.Data_Disclosure summary:after{content:"⌄";color:#69bdb3;font-size:18px;transition:transform .2s}
+.Data_Disclosure[open] summary:after{transform:rotate(180deg)}
+.Data_Inside{border-top:1px solid #294757;padding:15px 17px;display:grid;gap:15px}
+.Data_Section_Label{font-size:11px;color:#8faeb9;text-transform:uppercase;letter-spacing:1px;font-weight:750;margin-bottom:8px}
+.Tag_List{display:flex;gap:7px;flex-wrap:wrap}
+.Interest_Tag{font-size:11px;color:#c9e6e1;background:#1a3a3f;border:1px solid #3c6765;border-radius:6px;padding:5px 9px}
+.Data_Small{font-size:11px;color:#91a9b8;line-height:1.6}
+.Site_Visits{display:flex;flex-wrap:wrap;gap:10px}
+.Site_Visits div{background:#172f3c;border:1px solid #2c4c59;border-radius:8px;padding:9px 12px;min-width:135px}
+.Site_Visits b{display:block;color:#dff5f2;font-size:17px;font-variant-numeric:tabular-nums}
+.Site_Visits span{display:block;color:#91afba;font-size:11px}
+.Insight_Pool_Compare{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 15px}
+.Insight_Pool_Cell{border-radius:9px;background:#152c39;border:1px solid #304d5a;padding:9px 10px}
+.Insight_Pool_Cell strong{display:block;font-size:16px;font-variant-numeric:tabular-nums;color:#d7f7f1}
+.Insight_Pool_Cell label{font-size:10px;color:#91aebb}
+.Insight_Change{font-size:11px;color:#94d9c9;margin-bottom:3px}
+.Insight_Pool_Time{font-size:10px;color:#8ba6b2;margin:-6px 0 9px}
+@media(max-width:1100px){.Content_Grid{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}}
+@media(max-width:880px){.Content_Grid{grid-template-columns:1fr}.Trend_Columns{grid-template-columns:1fr 1fr}.Trend_List{grid-template-columns:1fr 1fr}}
+@media(max-width:540px){.Pool_Toolbar{align-items:flex-start;gap:9px}.Pool_Tabs{width:100%}.Pool_Tab{flex:1;padding:10px 5px}.Pool_Qualifier{width:100%;justify-content:space-between}.Trend_Columns{gap:8px}.Trend_List{grid-template-columns:1fr}.Trend_Item{padding:9px}.Trend_Change{font-size:13px}.Pool_Qualifier details[open] p{right:auto;left:0}.Data_Inside{padding:13px}}

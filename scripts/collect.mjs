@@ -6,6 +6,7 @@ export const Source_Url = "https://rest.flingster.com/xhr.html?v=2&online=1&room
 export const History_Path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/history.json");
 export const Retention_Days = 45;
 export const Min_Snapshot_Gap_Seconds = 25 * 60;
+export const Pool_Names = ["Adult", "Default", "Combined"];
 
 export function Parse_Online_Response(Html_Text, Timestamp_Seconds = Math.floor(Date.now() / 1000)) {
   if (typeof Html_Text !== "string" || Html_Text.length > 5_000_000) {
@@ -24,7 +25,12 @@ export function Parse_Online_Response(Html_Text, Timestamp_Seconds = Math.floor(
   if (Country_Entries.length < 20 || Total_From_Countries !== Payload.ALL) {
     throw new Error("Country count reconciliation failed");
   }
-  return { t: Timestamp_Seconds, n: Payload.ALL, c: Object.fromEntries(Country_Entries) };
+  const Snapshot = { t: Timestamp_Seconds, n: Payload.ALL, c: Object.fromEntries(Country_Entries) };
+  if (Number.isSafeInteger(Payload.Members) && Payload.Members > 0) Snapshot.members = Payload.Members;
+  if (Array.isArray(Payload.Tags)) {
+    Snapshot.tags = [...new Set(Payload.Tags.filter((Tag) => typeof Tag === "string" && /^[a-z0-9-]{1,48}$/i.test(Tag)))].slice(0, 80);
+  }
+  return Snapshot;
 }
 
 export function Merge_Snapshot_History(Existing_History, New_Snapshot, Now_Seconds = Math.floor(Date.now() / 1000)) {
@@ -54,17 +60,20 @@ export function Merge_Snapshot_History(Existing_History, New_Snapshot, Now_Secon
   };
 }
 
-export async function Fetch_Online_Response(Fetch_Function = fetch) {
-  const Request_Url = Source_Url + "&ver=" + Date.now();
+export async function Fetch_Online_Response(Fetch_Function = fetch, Room = "Adult") {
+  if (!Pool_Names.includes(Room)) throw new Error("Unsupported activity pool");
+  const Request_Url = new URL(Source_Url);
+  Request_Url.searchParams.set("room", Room === "Combined" ? "Adult,Default" : Room);
+  Request_Url.searchParams.set("ver", String(Date.now()));
   let Last_Error = null;
   for (let Attempt = 1; Attempt <= 3; Attempt++) {
     try {
-      const Response = await Fetch_Function(Request_Url, {
+      const Response = await Fetch_Function(Request_Url.toString(), {
         method: "GET",
         redirect: "follow",
         signal: AbortSignal.timeout(18000),
         headers: {
-          "user-agent": "Mozilla/5.0 (compatible; CountryPulse/1.1)",
+          "user-agent": "Mozilla/5.0 (compatible; CountryPulse/1.2)",
           referer: "https://flingster.com/",
           accept: "text/html,*/*;q=0.8",
         },
@@ -77,13 +86,25 @@ export async function Fetch_Online_Response(Fetch_Function = fetch) {
       if (Attempt < 3) await new Promise((Resolve) => setTimeout(Resolve, Attempt * 1600));
     }
   }
-  throw new Error("Could not collect validated country counts: " + (Last_Error?.message || "unknown error"));
+  throw new Error("Could not collect validated " + Room + " counts: " + (Last_Error?.message || "unknown error"));
 }
 
 export async function Collect_Once() {
   const Raw_History = await readFile(History_Path, "utf8");
   const Existing_History = JSON.parse(Raw_History);
-  const Incoming_Snapshot = await Fetch_Online_Response();
+  // One collector for every pool. No per-country proxies or platform-specific aliases.
+  const [Adult_Snapshot, Default_Snapshot, Combined_Snapshot] = await Promise.all([
+    Fetch_Online_Response(fetch, "Adult"),
+    Fetch_Online_Response(fetch, "Default"),
+    Fetch_Online_Response(fetch, "Combined"),
+  ]);
+  const Incoming_Snapshot = {
+    ...Adult_Snapshot,
+    rooms: {
+      Default: { n: Default_Snapshot.n, c: Default_Snapshot.c },
+      Combined: { n: Combined_Snapshot.n, c: Combined_Snapshot.c },
+    },
+  };
   const New_History = Merge_Snapshot_History(Existing_History, Incoming_Snapshot, Incoming_Snapshot.t);
   if (JSON.stringify(New_History.snapshots) === JSON.stringify(Existing_History.snapshots)) {
     console.log("SKIPPED: Snapshot already captured in the current half-hour window");
@@ -93,7 +114,12 @@ export async function Collect_Once() {
   await mkdir(dirname(History_Path), { recursive: true });
   await writeFile(Temporary_Path, JSON.stringify(New_History) + "\n", { encoding: "utf8", mode: 0o644 });
   await rename(Temporary_Path, History_Path);
-  console.log("CAPTURED: " + new Date(Incoming_Snapshot.t * 1000).toISOString() + ", " + Incoming_Snapshot.n + " online, " + Object.keys(Incoming_Snapshot.c).length + " countries, " + New_History.snapshots.length + " stored snapshots");
+  console.log("CAPTURED: " + new Date(Incoming_Snapshot.t * 1000).toISOString() +
+    ", Adult=" + Incoming_Snapshot.n +
+    ", Default=" + Default_Snapshot.n +
+    ", Combined=" + Combined_Snapshot.n +
+    ", members=" + (Incoming_Snapshot.members ?? "unavailable") +
+    ", snapshots=" + New_History.snapshots.length);
   return true;
 }
 
