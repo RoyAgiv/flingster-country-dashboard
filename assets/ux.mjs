@@ -361,7 +361,10 @@ function Add_Planner() {
       String((Best.Hour+1)%24).padStart(2,"0")+":00 ("+Timezone+") · "+
       Best.Sample_Count+" samples across "+Best.Distinct_Days+" days · preliminary";
   }
-  window.addEventListener("countrypulse:country-open",Update);
+  window.addEventListener("countrypulse:country-open",(Event_Object)=>{
+    Active_Country_Code=Event_Object.detail?.Code||Active_Country_Code;
+    Update();
+  });
   window.addEventListener("countrypulse:history",Update);
   for(const Id of ["Insight_Period","Insight_Timezone"]){
     document.getElementById(Id)?.addEventListener("change",Update);
