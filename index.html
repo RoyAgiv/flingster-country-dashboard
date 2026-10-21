@@ -75,6 +75,7 @@
   <link rel="stylesheet" href="./assets/matchlab.css">
   <link rel="stylesheet" href="./assets/country-extras.css">
   <link rel="stylesheet" href="./assets/network-explorer.css">
+  <link rel="stylesheet" href="./assets/ux.css">
 </head>
 <body>
   <main class="Shell">
@@ -92,14 +93,15 @@
       <div class="Refresh_Area">
         <button class="Button" id="Refresh_Button" type="button"><span aria-hidden="true">↻</span> Refresh numbers</button>
         <div class="Timestamp" id="Updated_At">Waiting for the first reading</div>
+        <div class="Refresh_Notice" id="Refresh_Notice" role="status" aria-live="polite">Checking live source…</div>
       </div>
     </section>
 
     <section class="Pool_Toolbar" aria-label="Activity pools">
-      <div class="Pool_Tabs" role="group" aria-label="Reported activity pool">
-        <button type="button" class="Pool_Tab" data-room="Adult" aria-pressed="true">Adult</button>
-        <button type="button" class="Pool_Tab" data-room="Default" aria-pressed="false">Default</button>
-        <button type="button" class="Pool_Tab" data-room="Combined" aria-pressed="false">Combined</button>
+      <div class="Pool_Tabs" role="radiogroup" aria-label="Reported activity pool">
+        <button type="button" role="radio" class="Pool_Tab" data-room="Adult" aria-checked="true">Adult</button>
+        <button type="button" role="radio" class="Pool_Tab" data-room="Default" aria-checked="false">Default</button>
+        <button type="button" role="radio" class="Pool_Tab" data-room="Combined" aria-checked="false">Combined</button>
       </div>
       <div class="Pool_Qualifier">
         <span class="Quality_Signal" id="Quality_Signal">Reading quality…</span>
@@ -192,6 +194,7 @@
   </main>
   <iframe id="Data_Frame" class="Hidden_Frame" title="Country statistics source" aria-hidden="true" tabindex="-1" referrerpolicy="no-referrer"></iframe>
   <script type="module">
+    import { Select_Latest_Saved_Reading, Age_Label, Retry_Delay_Seconds, Determine_Chart_State } from "./assets/reliability-utils.mjs";
     const Source_Url = "https://rest.flingster.com/xhr.html?v=2&online=1&room=Adult&config=1&lang=en";
     const Source_Origin = "https://rest.flingster.com";
     const Number_Formatter = new Intl.NumberFormat("en-US");
@@ -214,6 +217,71 @@
     let Timeout_Handle = null;
     let Refresh_Interval = null;
     let Is_Refreshing = false;
+    let Fetch_State = "loading";
+    let Data_Mode = "empty";
+    let Saved_History = [];
+    let Last_Error_Text = "";
+    let Retry_Attempts = 0;
+    let Retry_Handle = null;
+    let Scheduled_Retry_Seconds = null;
+    const Cache_Key = "country-pulse-readings-v1";
+    const Observation_Date_Formatter = new Intl.DateTimeFormat([], {year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",timeZoneName:"short"});
+
+    function Read_Browser_Cache(){
+      try {
+        const Cache = JSON.parse(localStorage.getItem(Cache_Key)||"{}");
+        if(Cache && typeof Cache==="object"){
+          const Snapshots = Object.entries(Cache).filter(([Room,Value])=>
+            ["Adult","Default","Combined"].includes(Room)&&Value&&Number.isSafeInteger(Value.t)&&
+            Value.n>0&&Value.c&&typeof Value.c==="object").map(([Room,Value])=>
+            Room==="Adult"?Value:{t:Value.t,n:0,c:{},rooms:{[Room]:{n:Value.n,c:Value.c}}});
+          Saved_History = Snapshots;
+        }
+      } catch(Error){Saved_History=[];}
+    }
+    function Store_Browser_Reading(Payload){
+      try {
+        const Cache = JSON.parse(localStorage.getItem(Cache_Key)||"{}");
+        const Country_Counts = Object.fromEntries(Object.entries(Payload).filter(([Code,Count])=>/^[A-Z]{2}$/.test(Code)&&Number.isSafeInteger(Count)&&Count>=0));
+        Cache[Selected_Room] = {t:Math.floor(Updated_At.getTime()/1000),n:Payload.ALL,c:Country_Counts,
+          members:Selected_Room==="Adult"?Payload.Members:undefined,tags:Array.isArray(Payload.Tags)?Payload.Tags:[]};
+        localStorage.setItem(Cache_Key,JSON.stringify(Cache));
+      } catch(Error){ /* Local storage may be disabled. */ }
+    }
+    function Apply_Saved_For_Room(){
+      const Latest = Select_Latest_Saved_Reading(Saved_History,Selected_Room);
+      if(!Latest || Data_Mode==="live")return false;
+      if(Country_Rows.length && Updated_At && Latest.Timestamp <= Updated_At.getTime()/1000)return false;
+      Apply_Data(Latest.Payload,"saved",Latest.Timestamp);
+      return true;
+    }
+    function Render_Observation_UI(){
+      const Has_Data = Country_Rows.length>0;
+      const Timestamp = Has_Data && Updated_At ? Math.floor(Updated_At.getTime()/1000) : null;
+      const Age = Timestamp ? Age_Label(Timestamp) : "";
+      let Label = Has_Data ? (Data_Mode==="live" ? "Live observation" : "Saved " + Age) :
+        Fetch_State==="error"?"Data unavailable":"Connecting";
+      let State = Has_Data ? (Data_Mode==="live"?"connected":"saved") :
+        Fetch_State==="error"?"error":"loading";
+      Set_Status(State,Label);
+      const Exact_Time = Has_Data && Updated_At ? Observation_Date_Formatter.format(Updated_At) : null;
+      document.getElementById("Updated_At").textContent = Exact_Time ?
+        (Data_Mode==="live"?"Live reading · ":"Saved reading · ") + Exact_Time :
+        Fetch_State==="error"?"No usable reading available":"Waiting for country data";
+      const Notice = document.getElementById("Refresh_Notice");
+      if(Notice){
+        Notice.textContent = Fetch_State==="error" ?
+          ("Live refresh unavailable" + (Scheduled_Retry_Seconds ? " · retry in ~"+Scheduled_Retry_Seconds+"s" : "") + ". " + Last_Error_Text) :
+          Fetch_State==="loading" ? (Has_Data?"Checking live feed; saved numbers remain available":"Checking live feed…") :
+          "Latest live request succeeded";
+      }
+      document.getElementById("Status").setAttribute("role","status");
+      document.getElementById("Status").setAttribute("aria-live","polite");
+      window.dispatchEvent(new CustomEvent("countrypulse:observation",{detail:{
+        Room:Selected_Room,Mode:Data_Mode,Fetch_State,Timestamp,Age,Error:Last_Error_Text,
+        Has_Data,Next_Retry_Seconds:Scheduled_Retry_Seconds
+      }}));
+    }
 
     function Format_Number(Value){return Number_Formatter.format(Value)}
     function Format_Percent(Value){return Percent_Formatter.format(Value)+"%"}
@@ -231,14 +299,22 @@
     }
     function Show_Error(Message){
       Is_Refreshing = false;
+      clearTimeout(Timeout_Handle);
       Refresh_Button.disabled = false;
-      Set_Status("error","Refresh unavailable");
-      document.getElementById("Updated_At").textContent = Message;
-      if(!Updated_At){
-        Top_Chart.innerHTML = '<div class="Loading">Could not load the live feed. Press “Refresh numbers” to try again.</div>';
-        Country_Table.innerHTML = '<tr><td colspan="4" class="Table_Empty">No data received. Check your connection and refresh.</td></tr>';
-        document.getElementById("Results_Count").textContent = "No results";
+      Fetch_State = "error";
+      Last_Error_Text = Message;
+      if(Data_Mode==="live")Data_Mode="previous";
+      if(!Country_Rows.length)Apply_Saved_For_Room();
+      Retry_Attempts++;
+      if(Retry_Handle)clearTimeout(Retry_Handle);
+      Retry_Handle=null;
+      Scheduled_Retry_Seconds = Auto_Refresh.checked ? Retry_Delay_Seconds(Retry_Attempts) : null;
+      if(Scheduled_Retry_Seconds){
+        Retry_Handle=setTimeout(()=>{Retry_Handle=null;Scheduled_Retry_Seconds=null;Refresh_Data();},Scheduled_Retry_Seconds*1000);
       }
+      Render_Observation_UI();
+      Render_Chart();
+      Render_Table();
     }
     function Create_Cell(Class_Name,Value){
       const Cell = document.createElement("td");
@@ -247,6 +323,23 @@
       return Cell;
     }
     function Render_Chart(){
+      const Chart_State = Determine_Chart_State(Country_Rows.length,Fetch_State);
+      if(Chart_State!=="ready"){
+        Top_Chart.replaceChildren();
+        const Message=document.createElement("div");
+        Message.className="Data_Empty_State";
+        const Heading=document.createElement("strong");
+        Heading.textContent=Chart_State==="error"?"Country data unavailable":Chart_State==="loading"?"Loading countries…":"No country readings yet";
+        const Info=document.createElement("span");
+        Info.textContent=Chart_State==="error"?"Live request failed and no saved country snapshot is available.":"Saved country readings will appear here as they arrive.";
+        Message.append(Heading,Info);
+        if(Chart_State==="error"){
+          const Retry=document.createElement("button");Retry.type="button";Retry.className="Secondary_Button";Retry.textContent="Retry live feed";
+          Retry.addEventListener("click",Refresh_Data);Message.append(Retry);
+        }
+        Top_Chart.append(Message);
+        return;
+      }
       const Top_Rows = Country_Rows.slice().sort((First,Second)=>Second.Count-First.Count).slice(0,Number(document.getElementById("Top_Limit")?.value || 10));
       const Max_Count = Top_Rows.length ? Top_Rows[0].Count : 1;
       Top_Chart.textContent="";
@@ -270,7 +363,21 @@
       Top_Chart.append(Fragment);
     }
     function Render_Table(){
-      if(!Updated_At)return;
+      if(!Country_Rows.length){
+        Country_Table.replaceChildren();
+        const Row=document.createElement("tr");
+        const Cell=document.createElement("td");Cell.className="Table_Empty";Cell.colSpan=4;
+        const Note=document.createElement("span");
+        Note.textContent=Fetch_State==="error"?"Data unavailable — no saved snapshot for this pool.":"Waiting for a country reading…";
+        Cell.append(Note);
+        if(Fetch_State==="error"){
+          const Retry=document.createElement("button");Retry.type="button";Retry.className="Secondary_Button Inline_Retry";
+          Retry.textContent="Retry";Retry.addEventListener("click",Refresh_Data);Cell.append(Retry);
+        }
+        Row.append(Cell);Country_Table.append(Row);
+        document.getElementById("Results_Count").textContent=Fetch_State==="error"?"Data unavailable":"Loading country data";
+        return;
+      }
       const Search_Query = Search_Input.value.trim().toLowerCase();
       const Filtered_Rows = Country_Rows.filter(Country_Row=>
         Country_Row.Name.toLowerCase().includes(Search_Query)||Country_Row.Code.toLowerCase().includes(Search_Query));
@@ -306,40 +413,53 @@
       Country_Table.append(Fragment);
       document.getElementById("Results_Count").textContent="Showing "+Format_Number(Filtered_Rows.length)+" of "+Format_Number(Country_Rows.length)+" countries and territories";
     }
-    function Apply_Data(Payload){
+    function Apply_Data(Payload,Source_Mode="live",Observed_At_Seconds=null){
       if(!Payload||typeof Payload!=="object"||!Number.isSafeInteger(Payload.ALL)||Payload.ALL<=0)throw Error("Unrecognized source response");
       const Entries = Object.entries(Payload).filter(([Code,Count])=>/^[A-Z]{2}$/.test(Code)&&Number.isSafeInteger(Count)&&Count>=0);
-      if(!Entries.length)throw Error("No country counts returned");
+      if(Entries.length<20)throw Error("Too few country counts");
       const Country_Sum = Entries.reduce((Total,[Code,Count])=>Total+Count,0);
       if(Country_Sum!==Payload.ALL)throw Error("Country totals did not match the source worldwide total");
-      Country_Rows = Entries.map(([Code,Count])=>({Code,Name:Country_Name(Code),Count}))
+      Country_Rows=Entries.map(([Code,Count])=>({Code,Name:Country_Name(Code),Count}))
         .sort((First,Second)=>Second.Count-First.Count||First.Name.localeCompare(Second.Name))
         .map((Country_Row,Index)=>({...Country_Row,Rank:Index+1}));
       Online_Total=Payload.ALL;
-      if(Selected_Room==="Adult"&&Number.isSafeInteger(Payload.Members)&&Payload.Members>0)Adult_Members=Payload.Members;
+      if(Selected_Room==="Adult"&&Number.isSafeInteger(Payload.Members)&&Payload.Members>1000)Adult_Members=Payload.Members;
       document.getElementById("Members_Total").textContent=Number.isSafeInteger(Adult_Members)?Format_Number(Adult_Members):"—";
-      Updated_At=new Date();
-      Is_Refreshing=false;
-      clearTimeout(Timeout_Handle);Refresh_Button.disabled=false;Export_Button.disabled=false;
+      Updated_At=new Date(Source_Mode==="saved"&&Number.isSafeInteger(Observed_At_Seconds)?
+        Observed_At_Seconds*1000:Date.now());
+      Data_Mode=Source_Mode;
+      if(Source_Mode==="live"){
+        Is_Refreshing=false;
+        clearTimeout(Timeout_Handle);
+        if(Retry_Handle)clearTimeout(Retry_Handle);
+        Retry_Handle=null;Retry_Attempts=0;Scheduled_Retry_Seconds=null;Last_Error_Text="";
+        Fetch_State="connected";
+        Store_Browser_Reading(Payload);
+      }
+      Refresh_Button.disabled=Is_Refreshing;
+      Export_Button.disabled=false;
       document.getElementById("World_Total").textContent=Format_Number(Online_Total);
       document.getElementById("Country_Total").textContent=Format_Number(Country_Rows.length);
       const Israel_Row=Country_Rows.find(Country_Row=>Country_Row.Code==="IL");
       document.getElementById("Israel_Total").textContent=Israel_Row?Format_Number(Israel_Row.Count):"—";
-      document.getElementById("Israel_Percent").textContent=Israel_Row?Format_Percent(Israel_Row.Count/Online_Total*100)+" of reported worldwide total":"Not included in latest feed";
-
-      document.getElementById("Updated_At").textContent="Checked at "+Updated_At.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
-      Set_Status("connected","Source connected");
+      document.getElementById("Israel_Percent").textContent=Israel_Row?Format_Percent(Israel_Row.Count/Online_Total*100)+" of reported worldwide total":"Not included in this feed";
       Render_Chart();Render_Table();
-      window.CountryPulse_Data={Country_Rows,Online_Total,Room:Selected_Room,Members:Payload.Members,Adult_Members,Tags:Array.isArray(Payload.Tags)?Payload.Tags:[],Meta:Current_Metadata};
-      window.dispatchEvent(new CustomEvent("countrypulse:data", { detail: window.CountryPulse_Data }));
+      window.CountryPulse_Data={Country_Rows,Online_Total,Room:Selected_Room,Members:Payload.Members,
+        Adult_Members,Tags:Array.isArray(Payload.Tags)?Payload.Tags:[],Meta:Current_Metadata,
+        Observation_Mode:Source_Mode,Observed_At:Math.floor(Updated_At.getTime()/1000)};
+      window.dispatchEvent(new CustomEvent("countrypulse:data",{detail:window.CountryPulse_Data}));
+      Render_Observation_UI();
     }
     function Refresh_Data(){
       if(Is_Refreshing)return;
+      if(Retry_Handle)clearTimeout(Retry_Handle);
+      Retry_Handle=null;Scheduled_Retry_Seconds=null;
       Is_Refreshing=true;Refresh_Button.disabled=true;
-      Set_Status("loading",Updated_At?"Refreshing…":"Connecting to source");
-      document.getElementById("Updated_At").textContent=Updated_At?"Checking for a new reading…":"Waiting for the first reading";
+      Fetch_State="loading";
+      Render_Observation_UI();
+      Render_Chart();Render_Table();
       clearTimeout(Timeout_Handle);
-      Timeout_Handle=setTimeout(()=>Show_Error("The data feed did not respond. Try refreshing again."),16000);
+      Timeout_Handle=setTimeout(()=>Show_Error("The live feed did not respond."),16000);
       const Next_Frame=document.createElement("iframe");
       Next_Frame.id="Data_Frame";
       Next_Frame.className="Hidden_Frame";
@@ -359,7 +479,7 @@
       if(Auto_Refresh.checked)Refresh_Interval=setInterval(()=>{if(!document.hidden)Refresh_Data()},60000);
     }
     function Export_Csv(){
-      if(!Updated_At)return;
+      if(!Country_Rows.length)return;
       const Csv_Rows=[["Rank","Country","Country code","Reported online","World share"],...Country_Rows.map(Country_Row=>[
         Country_Row.Rank,Country_Row.Name,Country_Row.Code,Country_Row.Count,(Country_Row.Count/Online_Total*100).toFixed(2)+"%"
       ])];
@@ -394,15 +514,16 @@
       Selected_Room=Room;
       Is_Refreshing=false;
       clearTimeout(Timeout_Handle);
-      Updated_At=null;
-      Online_Total=0;
-      Country_Rows=[];
-      Current_Metadata={};
+      if(Retry_Handle)clearTimeout(Retry_Handle);
+      Retry_Handle=null;Scheduled_Retry_Seconds=null;Retry_Attempts=0;
+      Updated_At=null;Data_Mode="empty";Fetch_State="loading";
+      Online_Total=0;Country_Rows=[];Current_Metadata={};
       window.CountryPulse_Data=null;
       for(const Field of ["World_Total","Country_Total","Israel_Total"])document.getElementById(Field).textContent="—";
-      Top_Chart.innerHTML='<div class="Loading"><b></b>Loading the selected pool…</div>';
-      Country_Table.innerHTML='<tr><td colspan="4" class="Table_Empty">Loading countries…</td></tr>';
+      Export_Button.disabled=true;
       window.dispatchEvent(new CustomEvent("countrypulse:pool-changing",{detail:{Room}}));
+      Apply_Saved_For_Room();
+      Render_Chart();Render_Table();
       Refresh_Data();
     });
     Refresh_Button.addEventListener("click",Refresh_Data);
@@ -410,8 +531,20 @@
     Search_Input.addEventListener("input",Render_Table);
     Sort_Select.addEventListener("change",Render_Table);
     window.addEventListener("countrypulse:chart-limit",Render_Chart);
-    Auto_Refresh.addEventListener("change",Reset_Refresh_Timer);
+    Auto_Refresh.addEventListener("change",()=>{
+      if(!Auto_Refresh.checked && Retry_Handle){clearTimeout(Retry_Handle);Retry_Handle=null;Scheduled_Retry_Seconds=null;}
+      Reset_Refresh_Timer();Render_Observation_UI();
+    });
     window.addEventListener("focus",()=>{if(Updated_At&&Date.now()-Updated_At.getTime()>90000)Refresh_Data()});
+    window.addEventListener("countrypulse:history",Event=>{
+      const History=Event.detail?.Historical_Snapshots||[];
+      Saved_History=Array.isArray(History)?History:[];
+      if(Data_Mode!=="live")Apply_Saved_For_Room();
+      if(Country_Rows.length)Render_Observation_UI();
+    });
+    Read_Browser_Cache();
+    Apply_Saved_For_Room();
+    Render_Chart();Render_Table();
     Reset_Refresh_Timer();
     Refresh_Data();
   </script>
@@ -421,5 +554,6 @@
   <script type="module" src="./assets/matchlab.mjs"></script>
   <script type="module" src="./assets/country-extras.mjs"></script>
   <script type="module" src="./assets/network-explorer.mjs"></script>
+  <script type="module" src="./assets/ux.mjs"></script>
 </body>
 </html>

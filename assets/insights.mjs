@@ -359,11 +359,14 @@ function Create_Interface() {
       const Total = Latest?.Country_Rows?.length || 0;
       const Displayed = Math.min(Number(Select.value), Total);
       Chart_Info.textContent = Total ? "Showing " + Displayed + " of " +
-        Total + " countries · scroll for more" : "Loading countries…";
+        Total + " countries · scroll for more" :
+        document.getElementById("Status")?.dataset.state==="error" ?
+        "Data unavailable · retry the feed" : "Waiting for country data";
       Show_All.hidden = !Total || Displayed >= Total;
     };
     Select.addEventListener("change", Update_Footer);
     window.addEventListener("countrypulse:data", Update_Footer);
+    window.addEventListener("countrypulse:observation", Update_Footer);
     window.dispatchEvent(new Event("countrypulse:chart-limit"));
   }
 

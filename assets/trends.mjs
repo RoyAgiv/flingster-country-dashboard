@@ -30,7 +30,7 @@ function Format_Signed(Value, Suffix = "") {
 
 function Update_Room_Buttons(Room) {
   for (const Button of Pool_Buttons) {
-    Button.setAttribute("aria-pressed", String(Button.dataset.room === Room));
+    Button.setAttribute("aria-checked", String(Button.dataset.room === Room));
   }
 }
 
@@ -173,6 +173,15 @@ function Render_All() {
 }
 
 for (const Button of Pool_Buttons) {
+  Button.addEventListener("keydown", (Event_Object) => {
+    if(!["ArrowRight","ArrowLeft","ArrowDown","ArrowUp","Home","End"].includes(Event_Object.key))return;
+    Event_Object.preventDefault();
+    const Index=Pool_Buttons.indexOf(Button);
+    const Next_Index=Event_Object.key==="Home"?0:Event_Object.key==="End"?Pool_Buttons.length-1:
+      (Index+(["ArrowRight","ArrowDown"].includes(Event_Object.key)?1:-1)+Pool_Buttons.length)%Pool_Buttons.length;
+    Pool_Buttons[Next_Index].focus();
+    Pool_Buttons[Next_Index].click();
+  });
   Button.addEventListener("click", () => {
     if (!Current_Data || Button.dataset.room !== Current_Data.Room) {
       Update_Room_Buttons(Button.dataset.room);

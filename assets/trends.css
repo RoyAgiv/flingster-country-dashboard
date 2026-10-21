@@ -2,7 +2,7 @@
 .Pool_Toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 17px}
 .Pool_Tabs{display:inline-flex;background:#0d1b29;border:1px solid #345365;border-radius:13px;padding:4px;gap:3px}
 .Pool_Tab{border:0;background:transparent;color:#a2beca;padding:10px 17px;border-radius:9px;font-size:13px;font-weight:750;white-space:nowrap}
-.Pool_Tab[aria-pressed="true"]{background:#244a50;color:#b8fff2;box-shadow:inset 0 0 0 1px #3e807e}
+.Pool_Tab[aria-checked="true"]{background:#244a50;color:#b8fff2;box-shadow:inset 0 0 0 1px #3e807e}
 .Pool_Tab:hover{color:#e1faf4}
 .Pool_Qualifier{font-size:11px;color:#a2b4bf;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .Pool_Qualifier details{position:relative}

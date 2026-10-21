@@ -75,6 +75,19 @@ The shared data does not prove a common matchmaking queue or independent
 brand populations. The public feeds still do not show verified live gender,
 interest, or waiting-user totals.
 
+## UX resilience and comparison
+
+- The home view falls back to the **latest validated saved reading per selected pool** if the live Flingster iframe cannot respond. Fallback data can come from the last published GitHub history snapshot or a small browser-local country-count cache. Saved data is always labeled **Saved**, with an age and exact observation time; it is never presented as live.
+- Live retry state is independent from chart/table data availability. Transient failures preserve country search, rankings, CSV and country-detail access. If neither saved nor live data exists, both chart and table show **Data unavailable** with nearby retry controls, not contradictory loading/no-results messages.
+- Automatically retry failed live requests with bounded 15/30/60/120-second delays. Do not create an additional server, agent or scheduled monitor; the existing collector remains authoritative for historical snapshots.
+- A smaller hero, sticky sections navigation, immediate country search, saved-versus-live status, copyable filtered URL and browser-local view preset help users reach data more quickly.
+- An optional **2–4 country comparison** shares pool and time range, showing reported online totals, share of the selected pool and changes only when a properly aligned historical baseline exists. No missing trend values are invented. The existing best-hours country popup now explicitly labels its time-planning confidence/sample coverage.
+- The seven-brand Network Explorer also has an optional compact table; shared snapshots remain grouped and **are never summed** as distinct people.
+- MatchLab country choices come from the local World Bank country directory with a small built-in fallback and an Unknown choice, not from live chat data. Pause/resume, undo, JSON backup/import and a disabled-empty clear action preserve local-only ownership and avoid claiming fabricated sessions. Pause durations are excluded from good-matches-per-hour calculations.
+- Interest validation handles an empty field as **Enter an interest to check.** Existing historically accepted/rejected results remain clearly labeled as historical.
+
+These are UI changes to provider-reported statistics; they do not change the underlying public counts or provide live gender, couples or interest-popularity data.
+
 ## Collection
 
 The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.

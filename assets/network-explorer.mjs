@@ -221,6 +221,35 @@ function Render_Config_Changes() {
   }
 }
 
+function Render_Network_Table(Snapshot, Groups) {
+  const Body=document.getElementById("Network_Table_Body");
+  if(!Body)return;
+  Body.replaceChildren();
+  const Brands=Snapshot?.brands||{};
+  for(const Brand of Known_Brands){
+    const Record=Brands[Brand.Id];
+    const Reading=Record?.[Selected_Pool];
+    const Group=Groups.find(Entry=>Entry.includes(Brand.Id));
+    const Config=Latest_Config_Brand(Brand.Id);
+    const Row=document.createElement("tr");
+    const Label=Make_Element("td","",Brand.Name);
+    const Count=Make_Element("td","",Reading?Format_Count(Reading.n):"Unavailable");
+    const Countries=Make_Element("td","",Reading?String(Reading.countries):"—");
+    const Membership=Make_Element("td","",Format_Count(Record?.members??Config?.Metadata_Members));
+    const Relationship=Make_Element("td","",Group?
+      "Exact country data with "+Group.filter(Id=>Id!==Brand.Id).map(Id=>Known_Brands.find(Item=>Item.Id===Id)?.Name||Id).join(", "):
+      "No exact match in this snapshot");
+    Row.append(Label,Count,Countries,Membership,Relationship);
+    Body.append(Row);
+  }
+  const Alias_Row=document.createElement("tr");
+  Alias_Row.append(Make_Element("td","",Shared_Alias.Name),
+    Make_Element("td","","Shared Adult"),Make_Element("td","","—"),
+    Make_Element("td","","—"),
+    Make_Element("td","","Uses Flingster Adult; not additional users"));
+  Body.append(Alias_Row);
+}
+
 function Render_Network() {
   const Snapshot = Latest_Snapshot();
   const Brands = Snapshot?.brands || {};
@@ -234,6 +263,7 @@ function Render_Network() {
     Summary.Available+" hosts · "+Format_Count(Summary.Min)+"–"+Format_Count(Summary.Max)+
     " reported · "+Summary.Spread_Pct+"% total spread" : "No validated pool readings yet";
   const Groups = Render_Exact_Groups(Brands);
+  Render_Network_Table(Snapshot,Groups);
   const Grid = document.getElementById("Network_Grid");
   Grid.replaceChildren();
   Grid.append(Make_Brand_Card(Known_Brands[0],Snapshot,Groups));
@@ -241,7 +271,7 @@ function Render_Network() {
   for (const Brand of Known_Brands.slice(1)) Grid.append(Make_Brand_Card(Brand,Snapshot,Groups));
   Render_Config_Changes();
   for (const Button of document.querySelectorAll("#Network_Tabs button")) {
-    Button.setAttribute("aria-pressed",String(Button.dataset.pool===Selected_Pool));
+    Button.setAttribute("aria-checked",String(Button.dataset.pool===Selected_Pool));
   }
   document.getElementById("Network_Retrieved").textContent =
     "Last saved "+Date_Label+" · expected roughly every 30 minutes; GitHub jobs may be delayed.";
@@ -274,11 +304,13 @@ function Setup_Network_Explorer() {
     '<span class="Network_Preview" id="Network_Preview">Loading verified feeds…</span></summary>'+
     '<div class="Network_Content">'+
       '<div class="Network_Notice"><i aria-hidden="true">ⓘ</i><span>These are <strong>provider-reported activity snapshots, not separate populations.</strong> Brands can share backend statistics. Never add their totals or member counters to estimate unique people.</span></div>'+
-      '<div class="Network_Toolbar"><div class="Network_Tabs" id="Network_Tabs" role="group" aria-label="Network activity pool">'+
-        '<button type="button" data-pool="default" aria-pressed="true">Default pool</button>'+
-        '<button type="button" data-pool="combined" aria-pressed="false">Combined pool</button></div>'+
+      '<div class="Network_Toolbar"><div class="Network_Tabs" id="Network_Tabs" role="radiogroup" aria-label="Network activity pool">'+
+        '<button type="button" data-pool="default" role="radio" aria-checked="true">Default pool</button>'+
+        '<button type="button" data-pool="combined" role="radio" aria-checked="false">Combined pool</button></div>'+
         '<span class="Network_Status" id="Network_Status">Loading statistics…</span></div>'+
       '<div class="Network_Exact_Groups" id="Network_Exact_Groups"></div>'+
+      '<details class="Network_Compact_Table"><summary>Compact comparison table</summary>'+
+      '<div class="Network_Table_Scroll"><table><thead><tr><th>Brand</th><th>Reported</th><th>Countries</th><th>Members</th><th>Shared snapshot</th></tr></thead><tbody id="Network_Table_Body"></tbody></table></div></details>'+
       '<div class="Network_Grid" id="Network_Grid"></div>'+
       '<div class="Network_Comparison_Text" id="Network_Retrieved"></div>'+
       '<div class="Network_Config_Changes"><h3>Daily app-configuration changes</h3>'+
@@ -291,6 +323,12 @@ function Setup_Network_Explorer() {
     '</div>';
   document.querySelector(".Content_Grid").after(Explorer);
   for (const Button of document.querySelectorAll("#Network_Tabs button")) {
+    Button.addEventListener("keydown",(Event_Object)=>{
+      if(!["ArrowRight","ArrowLeft","ArrowDown","ArrowUp"].includes(Event_Object.key))return;
+      Event_Object.preventDefault();
+      const Next=Array.from(document.querySelectorAll("#Network_Tabs button")).find(Item=>Item!==Button);
+      Next?.focus();Next?.click();
+    });
     Button.addEventListener("click",()=>{
       Selected_Pool=Button.dataset.pool;
       Render_Network();

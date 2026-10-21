@@ -16,8 +16,8 @@
 .Network_Toolbar{display:flex;justify-content:space-between;align-items:center;gap:13px;flex-wrap:wrap;margin:16px 0 12px}
 .Network_Tabs{display:flex;align-items:center;gap:3px;background:#0b1b29;border:1px solid #385463;padding:3px;border-radius:10px}
 .Network_Tabs button{padding:8px 16px;color:#a0b6c4;background:transparent;border:0;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer}
-.Network_Tabs button[aria-pressed="true"]{color:#b9fff0;background:#255158;border:1px solid #4b8984}
-.Network_Tabs button:not([aria-pressed="true"]):hover{color:#e4fbf5}
+.Network_Tabs button[aria-checked="true"]{color:#b9fff0;background:#255158;border:1px solid #4b8984}
+.Network_Tabs button:not([aria-checked="true"]):hover{color:#e4fbf5}
 .Network_Status{font-size:11px;color:#91b0bc}
 .Network_Exact_Groups{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
 .Network_Group{display:flex;align-items:center;gap:9px;max-width:100%;border:1px solid #38645f;border-radius:10px;background:#193a3d;padding:10px 12px;font-size:12px;color:#dbf6e9}

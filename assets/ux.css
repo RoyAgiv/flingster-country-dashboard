@@ -1,0 +1,102 @@
+/* Compact, resilient CountryPulse experience. Keeps the existing dark/teal system. */
+:root{--Ux_Teal:#83e8d6;--Ux_Muted:#b5cad4}
+.Site_Bar{min-height:62px}
+.Hero{padding:23px 0 14px;gap:16px}
+.Hero h1{font-size:clamp(30px,3.2vw,41px);letter-spacing:-1.7px;margin:10px 0}
+.Hero_Text{font-size:14px;max-width:650px;line-height:1.5}
+.Hero .Refresh_Area{gap:5px}
+.Hero .Timestamp{font-size:12px;color:var(--Ux_Muted)}
+.Refresh_Notice{font-size:12px;color:#afc7d2;line-height:1.5;max-width:290px}
+.Stats{margin:10px 0 15px;gap:11px}
+.Stats .Card{padding:15px 17px;min-height:106px}
+.Stats .Card_Value{font-size:clamp(26px,3vw,33px);margin-top:7px}
+.Stats .Card_Note{color:#a0b8c6}
+.Pool_Toolbar{margin:4px 0 10px}
+.Pool_Inline_Hint{width:100%;font-size:12px;color:#a6c6ce;line-height:1.4}
+.Status[data-state="saved"]{color:#f1d5ab;border-color:#705b3d;background:#2a292b}
+.Status[data-state="saved"] .Status_Dot{background:#f1c37c;box-shadow:0 0 0 3px rgba(241,195,124,.1)}
+.Data_Empty_State{display:grid;justify-items:center;align-content:center;gap:12px;min-height:185px;padding:20px 10px;text-align:center;color:#bfd5dc;font-size:13px}
+.Data_Empty_State strong{font-size:15px;color:#e0edef}
+.Data_Empty_State span{max-width:330px}
+.Inline_Retry{margin-left:12px}
+#Top_Chart .Data_Empty_State{min-height:200px}
+.Quick_Nav{position:sticky;top:0;z-index:38;background:rgba(10,24,36,.96);backdrop-filter:blur(14px);border-bottom:1px solid #2d4859;padding:10px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.Quick_Nav_Links{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.Quick_Nav_Link{display:inline-block;border-radius:8px;padding:7px 9px;text-decoration:none;color:#d2e5ea;font-size:12px;font-weight:750;white-space:nowrap}
+.Quick_Nav_Link:hover,.Quick_Nav_Link:focus-visible{color:#97f4e5;background:#223e49}
+.Quick_Nav_Right{display:flex;align-items:center;gap:9px;flex:1;justify-content:flex-end;min-width:185px}
+.Quick_Data_Status{font-size:11px;border:1px solid #5c726f;border-radius:999px;padding:5px 9px;white-space:nowrap;color:#d2e2e4;background:#213640;font-weight:750}
+.Quick_Data_Status[data-source="live"]{border-color:#36877c;background:#123d3b;color:#a4f9e9}
+.Quick_Data_Status[data-source="saved"]{border-color:#8a7045;background:#3a352d;color:#f4d49f}
+.Quick_Data_Status[data-source="unavailable"]{border-color:#7e5351;color:#ffb7b4}
+.Quick_Search{max-width:175px;min-width:115px;width:100%;background:#102431;border:1px solid #375464;border-radius:9px;min-height:35px;color:#f2fafc;padding:6px 10px!important;font-size:12px!important}
+.View_Actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 8px;color:#a8bfca;font-size:11px}
+.View_Badge{border:1px solid #587474;border-radius:999px;padding:5px 9px;color:#b9e2dc;white-space:nowrap}
+.View_Meta{flex:1;min-width:170px;color:#abc6d0;font-size:11px}
+.View_Buttons{display:flex;gap:6px}
+.View_Buttons .Secondary_Button{padding:6px 10px;font-size:11px}
+.View_Action_Status{font-size:11px;color:#a6ecda}
+#rankings,#trends,#countries,#Network_Explorer,#MatchLab,#Country_Compare,#More_Data{scroll-margin-top:98px}
+.Compare_Panel{margin:0 0 18px}
+.Compare_Inner{padding:16px 18px 20px;border-top:1px solid #2d4654}
+.Compare_Toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;margin:13px 0}
+.Compare_Selects{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.Compare_Select_Label{display:grid;gap:5px;color:#a7c3ce;font-size:11px}
+.Compare_Select{padding:8px 27px 8px 9px!important;width:100%;min-width:0;font-size:12px}
+.Compare_Period{font-size:12px;min-height:38px;align-self:end}
+.Compare_Context{font-size:11px;color:#99b9c4;margin-bottom:10px}
+.Compare_Results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.Compare_Card{background:#142d3b;border:1px solid #315464;border-radius:12px;display:flex;flex-direction:column;gap:8px;padding:13px;min-width:0}
+.Compare_Title{font-size:13px;color:#d8f0ee;font-weight:820;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.Compare_Big{font-size:clamp(21px,2.2vw,28px);font-weight:850;font-variant-numeric:tabular-nums;color:#b8ffec}
+.Compare_Small{font-size:11px;color:#9bbcc8;line-height:1.4}
+.Compare_Change{font-size:13px;color:#d0dfde;font-weight:800}
+.Compare_Change[data-direction="up"]{color:#90f0bf}
+.Compare_Change[data-direction="down"]{color:#ffb0aa}
+.Compare_Card button{align-self:flex-start;padding:7px 10px;margin-top:auto}
+.Compare_Empty{padding:16px;color:#b2cbd2;border:1px dashed #395565;border-radius:10px;grid-column:1/-1;font-size:12px}
+.Compare_Add_Button{font-size:20px}
+.Planner_Status{padding:12px 2px 0;color:#aad3ce;font-size:12px;line-height:1.6}
+.Stats .Card_Label, .Insight_Mini_Label,.Card_Note,.History_Coverage,.Data_Small,.Network_Card_Foot,.Trend_Foot{font-size:12px!important;line-height:1.55!important}
+.Scenario_Foot,.Research_Muted,.Insight_Disclaimer,.Network_Comparison_Text{color:#acc1c9!important}
+@media(max-width:980px){
+ .Quick_Nav{flex-direction:column;align-items:stretch}
+ .Quick_Nav_Right{justify-content:space-between}
+ .Quick_Search{max-width:240px}
+ .Compare_Results{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .Compare_Selects{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ .Hero{padding:15px 0 10px}
+ .Hero h1{font-size:30px}
+ .Hero_Text{font-size:13px}
+ .Quick_Nav_Links{gap:0}
+ .Quick_Nav_Link{padding:6px 8px;font-size:11px}
+ .Quick_Nav_Right{width:100%}
+ .Quick_Search{max-width:185px}
+ .View_Buttons{width:100%}
+ .View_Buttons button{flex:1}
+ .View_Meta{min-width:0}
+ .Compare_Toolbar{grid-template-columns:1fr}
+ .Compare_Results{grid-template-columns:1fr 1fr}
+ .Compare_Selects{grid-template-columns:1fr 1fr}
+ .Compare_Card{padding:10px}
+ .Stats .Card{padding:12px 11px;min-height:90px}
+ .Stats .Card_Value{font-size:25px}
+}
+@media(max-width:380px){
+ .Quick_Nav_Link{font-size:10px;padding:5px}
+ .Compare_Results{grid-template-columns:1fr}
+}
+
+.Network_Compact_Table{margin:12px 0 14px;border:1px solid #355260;border-radius:11px;background:#122637}
+.Network_Compact_Table summary{padding:11px 14px;cursor:pointer;font-size:12px;font-weight:800;color:#c9e8e5}
+.Network_Table_Scroll{max-width:100%;overflow-x:auto;border-top:1px solid #355260;scrollbar-width:thin}
+.Network_Table_Scroll table{min-width:700px}
+.Network_Table_Scroll th,.Network_Table_Scroll td{font-size:12px;line-height:1.5;padding:11px 9px;color:#c3dce4;white-space:normal}
+.Network_Table_Scroll th:first-child,.Network_Table_Scroll td:first-child{font-weight:800;color:#e5f3f3}
+.Network_Table_Scroll td:last-child{color:#a8c6c9}
+.MatchLab_Import_Label{cursor:pointer}
+.MatchLab_Button:disabled{opacity:.45;cursor:not-allowed}
+.MatchLab_Active button{min-height:37px}
+#MatchLab .MatchLab_Actions>.Danger{margin-left:auto}

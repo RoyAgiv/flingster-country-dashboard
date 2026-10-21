@@ -96,6 +96,12 @@ function Create_Research() {
 
 function Check_Tag() {
   const Tag_Value = document.getElementById("Tag_Check_Input").value;
+  if(!Tag_Value.trim()){
+    const Output=document.getElementById("Tag_Check_Result");
+    Output.dataset.status="invalid";
+    Output.textContent="Enter an interest to check.";
+    return;
+  }
   const Result = Evaluate_Interest_Tag(Tag_Value);
   const Output = document.getElementById("Tag_Check_Result");
   Output.dataset.status = Result.Status;
