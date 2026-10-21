@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111d">
+  <meta name="description" content="An easy, searchable country breakdown of the online counts reported by the shared Flingster and DirtyRoulette data feed.">
+  <title>CountryPulse · Flingster & DirtyRoulette</title>
+  <style>
+    :root{color-scheme:dark;--Bg:#08111d;--Panel:#101d2b;--Line:#273849;--Text:#edf6fc;--Muted:#8ca2b4;--Cyan:#5bdfd0;--Cyan_Bright:#a0fff0;--Blue:#5a8ff0;--Gold:#ffc77d}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(ellipse 800px 480px at 85% -6%,rgba(55,133,155,.17),transparent),radial-gradient(ellipse 600px 400px at -15% 35%,rgba(39,97,136,.10),transparent),var(--Bg);color:var(--Text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+    button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:wait;opacity:.65}a{color:var(--Cyan_Bright)}a:hover{text-decoration:none}
+    .Shell{max-width:1160px;margin:0 auto;padding:0 26px 65px}
+    .Site_Bar{display:flex;justify-content:space-between;align-items:center;min-height:84px;border-bottom:1px solid rgba(176,208,228,.1);gap:16px}
+    .Brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.65px;font-size:21px}.Brand b{font-weight:800;color:var(--Cyan)}
+    .Mark{width:37px;height:37px;border-radius:11px;background:linear-gradient(145deg,#1b5160,#102839);display:flex;align-items:end;justify-content:center;gap:4px;padding:9px;box-shadow:inset 0 0 0 1px #4fafa569}
+    .Mark i{display:block;width:5px;border-radius:3px 3px 0 0;background:var(--Cyan)}.Mark i:nth-child(1){height:9px;opacity:.5}.Mark i:nth-child(2){height:17px}.Mark i:nth-child(3){height:12px;opacity:.75}
+    .Status{display:inline-flex;align-items:center;gap:8px;border:1px solid #375361;background:#142634;padding:7px 12px;border-radius:999px;color:#c0d7e0;font-size:12px;white-space:nowrap}
+    .Status_Dot{width:7px;height:7px;display:inline-block;background:#e6ad67;border-radius:50%;box-shadow:0 0 9px #e6ad6755}.Status[data-state="connected"] .Status_Dot{background:var(--Cyan);box-shadow:0 0 0 4px rgba(91,223,208,.12)}.Status[data-state="error"] .Status_Dot{background:#ff8f8f}
+    .Hero{padding:54px 0 29px;display:flex;align-items:end;justify-content:space-between;gap:28px;flex-wrap:wrap}
+    .Eyebrow{font-size:11px;font-weight:800;color:var(--Cyan);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:9px}
+    .Eyebrow:before{content:"";height:7px;width:7px;border-radius:2px;background:var(--Cyan);transform:rotate(45deg)}
+    h1{font-size:clamp(34px,5.2vw,61px);letter-spacing:-2.8px;line-height:1.08;margin:18px 0 14px;font-weight:800}
+    h1 span{color:var(--Cyan)}
+    .Hero_Text{max-width:655px;font-size:16px;line-height:1.65;color:#acc1cf;margin:0}
+    .Refresh_Area{text-align:right;display:flex;flex-direction:column;gap:9px;align-items:flex-end;padding-bottom:6px}
+    .Button{display:inline-flex;align-items:center;gap:9px;background:var(--Cyan);color:#09242a;padding:12px 18px;border:0;border-radius:10px;font-weight:800;box-shadow:0 6px 26px rgba(91,223,208,.13);transition:background .15s,transform .15s}
+    .Button:hover:not(:disabled){background:#8af8e7;transform:translateY(-1px)}
+    .Timestamp{font-size:12px;color:var(--Muted)}
+    .Stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin:14px 0 19px}
+    .Card,.Panel{border:1px solid var(--Line);background:linear-gradient(170deg,rgba(27,46,61,.83),rgba(14,26,40,.91));border-radius:17px;box-shadow:0 12px 48px rgba(0,0,0,.08)}
+    .Card{min-height:144px;padding:20px 20px 19px;overflow:hidden;position:relative}
+    .Card:after{content:"";width:120px;height:120px;right:-50px;top:-65px;position:absolute;background:radial-gradient(circle,rgba(91,223,208,.075),transparent 70%);pointer-events:none}
+    .Card_Label{font-size:12px;color:#a8becb;font-weight:650}.Card_Value{font-size:clamp(27px,3.7vw,38px);font-weight:850;letter-spacing:-1.2px;margin-top:11px;font-variant-numeric:tabular-nums;line-height:1.2}
+    .Card_Value.Small{font-size:clamp(19px,2.5vw,25px);letter-spacing:-.5px}.Card_Note{color:#849cae;font-size:11px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Accent{color:var(--Cyan_Bright)}
+    .Content_Grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:17px;margin-bottom:19px}
+    .Panel{padding:23px 24px}.Panel_Head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+    h2{margin:0;font-size:18px;letter-spacing:-.4px;font-weight:800}.Subheading{margin:3px 0 0;color:var(--Muted);font-size:12px}.Tiny_Tag{border:1px solid #2b615e;border-radius:7px;color:#82e4d6;background:#123d3b;padding:5px 8px;font-weight:750;font-size:10px;letter-spacing:.3px}
+    .Bars{display:grid;gap:13px;min-height:270px}.Bar_Row{display:grid;grid-template-columns:minmax(128px,1fr) minmax(120px,2fr) 65px;align-items:center;gap:16px;font-size:13px}
+    .Bar_Country{display:flex;align-items:center;gap:9px;min-width:0}.Flag{font-size:20px;line-height:1.1}.Bar_Country_Name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .Bar_Track{background:#243747;height:9px;border-radius:20px;overflow:hidden}.Bar_Fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#4d9cb4,var(--Cyan));min-width:2px}
+    .Bar_Number{font-variant-numeric:tabular-nums;text-align:right;font-size:12px;color:#cbdae4;font-weight:750}
+    .Explainer{border-left:3px solid var(--Cyan);padding:2px 0 3px 15px;font-size:13px;color:#c0d2db;line-height:1.8}
+    .Explainer strong{color:#f4fbff}.Explainer p{margin:0 0 12px}.Explainer p:last-child{margin:0}
+    .Compare{display:flex;align-items:center;gap:10px;margin:20px 0 16px}.Site_Pill{padding:10px 10px;border:1px solid #44606c;border-radius:9px;flex:1;text-align:center;font-weight:750;font-size:12px;background:#192d3b}.Equals{font-size:20px;color:var(--Cyan);font-weight:800}
+    .Note{border:1px solid #635134;background:rgba(188,129,42,.08);padding:13px 14px;border-radius:10px;color:#e5cb9f;font-size:12px;line-height:1.6}
+    .Table_Head{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:15px}
+    .Controls{display:flex;gap:9px;flex-wrap:wrap}
+    .Search_Wrap{position:relative}.Search_Icon{position:absolute;left:13px;top:9px;color:#9ab0be;font-size:18px;pointer-events:none}
+    input[type="search"],select{background:#0d1a27;border:1px solid #365062;border-radius:9px;color:#eaf4fb;min-height:41px;outline:0;font-size:13px}
+    input[type="search"]{padding:9px 12px 9px 37px;width:245px}select{padding:8px 29px 8px 12px}
+    input[type="search"]:focus,select:focus{border-color:var(--Cyan);box-shadow:0 0 0 3px rgba(91,223,208,.1)}
+    .Secondary_Button{background:#162c3b;border:1px solid #375467;border-radius:9px;color:#daebf4;padding:9px 12px;font-size:12px;font-weight:750}
+    .Secondary_Button:hover:not(:disabled){background:#234051}
+    .Table_Scroll{overflow-x:auto;max-height:565px;overflow-y:auto;scrollbar-color:#365062 #0b1825;scrollbar-width:thin}
+    table{width:100%;border-collapse:collapse;min-width:540px;font-size:13px}th{position:sticky;top:0;background:#132433;color:#8faabd;z-index:1;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1.1px;font-weight:800;padding:12px 14px;border-bottom:1px solid #35485b}
+    th:last-child,td:last-child{text-align:right}td{padding:12px 14px;border-bottom:1px solid rgba(67,89,107,.39);font-variant-numeric:tabular-nums}tbody tr:hover{background:rgba(66,105,120,.12)}
+    .Table_Country{display:flex;gap:12px;align-items:center}.Table_Name{font-weight:700}.Table_Code{display:inline-block;color:#8ca8b8;margin-left:9px;font-size:11px}.Rank{color:#8098a9;font-weight:750}
+    .Table_Count{font-weight:800;color:#e8f5fc}.Mini_Progress{display:inline-block;width:70px;height:5px;border-radius:8px;background:#244052;margin-right:11px;vertical-align:middle;overflow:hidden}.Mini_Progress>i{display:block;height:100%;border-radius:8px;background:#5fcfc1}
+    .Table_Empty{padding:30px 10px;color:#a6bcc9;text-align:center}
+    .Bottom_Row{display:flex;gap:15px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:12px;color:#8fa9bb;margin-top:15px}
+    footer{padding:18px 0 0;text-align:center;color:#738e9f;font-size:12px}
+    .Hidden_Frame{position:absolute;width:1px;height:1px;left:-100px;top:-100px;border:0;opacity:0;pointer-events:none}
+    .Loading{color:#89a9b9;font-size:13px;padding:70px 0;text-align:center}
+    .Loading b{display:inline-block;width:13px;height:13px;border:2px solid #3a6c6b;border-top-color:var(--Cyan);border-radius:50%;margin-right:9px;animation:Spin 900ms linear infinite;vertical-align:middle}
+    @keyframes Spin{to{transform:rotate(360deg)}}
+    @media(max-width:880px){.Stats{grid-template-columns:repeat(2,1fr)}.Content_Grid{grid-template-columns:1fr}.Refresh_Area{align-items:flex-start;text-align:left}.Hero{padding-top:39px}.Panel{padding:20px}}
+    @media(max-width:520px){.Shell{padding:0 15px 50px}.Site_Bar{min-height:69px}.Brand{font-size:19px}.Hero{gap:19px}h1{letter-spacing:-1.8px}.Card{min-height:119px;padding:17px 14px}.Card_Value{font-size:28px}.Card_Value.Small{font-size:19px}.Card_Note{font-size:10px}.Panel{padding:18px 15px}.Bar_Row{grid-template-columns:minmax(95px,1fr) minmax(60px,1.25fr) 54px;gap:9px}.Bar_Country{gap:5px}.Bar_Country_Name{font-size:12px}.Search_Wrap,input[type="search"]{width:100%}.Controls{width:100%}.Controls select{flex:1}.Table_Head{align-items:stretch}.Site_Bar .Status{font-size:11px}.Stat_Grid{gap:10px}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="Shell">
+    <header class="Site_Bar">
+      <div class="Brand"><div class="Mark" aria-hidden="true"><i></i><i></i><i></i></div><span>country<b>pulse</b></span></div>
+      <div class="Status" id="Status" data-state="loading"><span class="Status_Dot"></span><span id="Status_Text">Connecting to source</span></div>
+    </header>
+
+    <section class="Hero">
+      <div>
+        <div class="Eyebrow">Online users · Country explorer</div>
+        <h1>Where the world <span>connects.</span></h1>
+        <p class="Hero_Text">Explore online-user counts by country reported by the data feed used on both Flingster and DirtyRoulette. No sign-in, code, or browser developer tools required.</p>
+      </div>
+      <div class="Refresh_Area">
+        <button class="Button" id="Refresh_Button" type="button"><span aria-hidden="true">↻</span> Refresh numbers</button>
+        <div class="Timestamp" id="Updated_At">Waiting for the first reading</div>
+      </div>
+    </section>
+
+    <section class="Stats" aria-label="At a glance">
+      <article class="Card"><div class="Card_Label">Reported online worldwide</div><div class="Card_Value Accent" id="World_Total">—</div><div class="Card_Note">Shared Flingster data feed</div></article>
+      <article class="Card"><div class="Card_Label">Countries & territories</div><div class="Card_Value" id="Country_Total">—</div><div class="Card_Note">Locations with reported counts</div></article>
+      <article class="Card"><div class="Card_Label">Israel <span aria-hidden="true">🇮🇱</span></div><div class="Card_Value" id="Israel_Total">—</div><div class="Card_Note" id="Israel_Percent">Share of reported worldwide total</div></article>
+      <article class="Card"><div class="Card_Label">Largest country</div><div class="Card_Value Small" id="Top_Country">—</div><div class="Card_Note" id="Top_Country_Note">Most reported online users</div></article>
+    </section>
+
+    <section class="Content_Grid">
+      <article class="Panel">
+        <div class="Panel_Head">
+          <div><h2>Most active countries</h2><p class="Subheading">Top 10 by reported online count</p></div>
+          <span class="Tiny_Tag">COUNTRY RANKING</span>
+        </div>
+        <div class="Bars" id="Top_Chart" aria-live="polite"><div class="Loading"><b></b>Loading the country ranking…</div></div>
+      </article>
+      <aside class="Panel">
+        <div class="Panel_Head"><div><h2>One shared source</h2><p class="Subheading">Understanding the two websites</p></div></div>
+        <div class="Compare"><div class="Site_Pill">Flingster</div><div class="Equals">=</div><div class="Site_Pill">DirtyRoulette</div></div>
+        <div class="Explainer">
+          <p>Both websites load the <strong>same Flingster-hosted country-count endpoint</strong>.</p>
+          <p>These numbers <strong>cannot distinguish</strong> DirtyRoulette visitors from Flingster visitors or tell whether people overlap.</p>
+        </div>
+        <div class="Note" style="margin-top:20px"><strong>Important:</strong> These are site-reported figures, not audited counts of real, unique people. Some figures may be cached, rounded, or estimated.</div>
+        <p class="Subheading" style="margin-top:17px">Data: <a href="https://rest.flingster.com/xhr.html?v=2&amp;online=1&amp;room=Adult&amp;config=1&amp;lang=en" target="_blank" rel="noreferrer">Flingster's public country feed ↗</a></p>
+      </aside>
+    </section>
+
+    <section class="Panel" aria-label="All countries">
+      <div class="Table_Head">
+        <div><h2>All countries</h2><p class="Subheading">Search, compare, and sort every reported location</p></div>
+        <div class="Controls">
+          <div class="Search_Wrap"><span class="Search_Icon" aria-hidden="true">⌕</span><input type="search" id="Search_Input" placeholder="Search country or code…" aria-label="Search countries" autocomplete="off"></div>
+          <select id="Sort_Select" aria-label="Sort countries"><option value="largest">Most online first</option><option value="smallest">Fewest online first</option><option value="name">Country A–Z</option></select>
+          <button id="Export_Button" class="Secondary_Button" type="button" disabled>Export CSV ↗</button>
+        </div>
+      </div>
+      <div class="Table_Scroll">
+        <table aria-label="Reported online counts for countries">
+          <thead><tr><th scope="col" style="width:64px">Rank</th><th scope="col">Country</th><th scope="col" style="text-align:right">Reported online</th><th scope="col" style="text-align:right">World share</th></tr></thead>
+          <tbody id="Country_Table"><tr><td colspan="4" class="Table_Empty">Loading countries…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="Bottom_Row"><span id="Results_Count">Waiting for data</span><span><label><input id="Auto_Refresh" type="checkbox" checked> Automatically refresh every 60 seconds</label></span></div>
+    </section>
+    <footer>CountryPulse is an independent viewer of publicly exposed, site-reported statistics. It is not affiliated with either website.</footer>
+  </main>
+  <iframe id="Data_Frame" class="Hidden_Frame" title="Country statistics source" aria-hidden="true" tabindex="-1" referrerpolicy="no-referrer"></iframe>
+  <script type="module">
+    const Source_Url = "https://rest.flingster.com/xhr.html?v=2&online=1&room=Adult&config=1&lang=en";
+    const Source_Origin = "https://rest.flingster.com";
+    const Number_Formatter = new Intl.NumberFormat("en-US");
+    const Percent_Formatter = new Intl.NumberFormat("en-US", {minimumFractionDigits:1, maximumFractionDigits:1});
+    const Country_Name_Formatter = new Intl.DisplayNames(["en"], {type:"region"});
+    const Data_Frame = document.getElementById("Data_Frame");
+    const Refresh_Button = document.getElementById("Refresh_Button");
+    const Export_Button = document.getElementById("Export_Button");
+    const Search_Input = document.getElementById("Search_Input");
+    const Sort_Select = document.getElementById("Sort_Select");
+    const Auto_Refresh = document.getElementById("Auto_Refresh");
+    const Country_Table = document.getElementById("Country_Table");
+    const Top_Chart = document.getElementById("Top_Chart");
+    let Country_Rows = [];
+    let Online_Total = 0;
+    let Updated_At = null;
+    let Timeout_Handle = null;
+    let Refresh_Interval = null;
+    let Is_Refreshing = false;
+
+    function Format_Number(Value){return Number_Formatter.format(Value)}
+    function Format_Percent(Value){return Percent_Formatter.format(Value)+"%"}
+    function Country_Name(Code){
+      if(Code==="XK")return "Kosovo";
+      try{const Name = Country_Name_Formatter.of(Code);return Name===Code?Code:Name}catch(Error){return Code}
+    }
+    function Country_Flag(Code){
+      if(Code==="XK")return "🌍";
+      return /^[A-Z]{2}$/.test(Code)?String.fromCodePoint(...[...Code].map(Character=>127397+Character.charCodeAt(0))):"🌍";
+    }
+    function Set_Status(State,Message){
+      document.getElementById("Status").dataset.state = State;
+      document.getElementById("Status_Text").textContent = Message;
+    }
+    function Show_Error(Message){
+      Is_Refreshing = false;
+      Refresh_Button.disabled = false;
+      Set_Status("error","Refresh unavailable");
+      document.getElementById("Updated_At").textContent = Message;
+      if(!Updated_At){
+        Top_Chart.innerHTML = '<div class="Loading">Could not load the live feed. Press “Refresh numbers” to try again.</div>';
+        Country_Table.innerHTML = '<tr><td colspan="4" class="Table_Empty">No data received. Check your connection and refresh.</td></tr>';
+        document.getElementById("Results_Count").textContent = "No results";
+      }
+    }
+    function Create_Cell(Class_Name,Value){
+      const Cell = document.createElement("td");
+      if(Class_Name)Cell.className=Class_Name;
+      Cell.textContent=Value;
+      return Cell;
+    }
+    function Render_Chart(){
+      const Top_Rows = Country_Rows.slice().sort((First,Second)=>Second.Count-First.Count).slice(0,10);
+      const Max_Count = Top_Rows.length ? Top_Rows[0].Count : 1;
+      Top_Chart.textContent="";
+      const Fragment = document.createDocumentFragment();
+      for(const Country_Row of Top_Rows){
+        const Row = document.createElement("div"); Row.className="Bar_Row";
+        const Label = document.createElement("div"); Label.className="Bar_Country";
+        const Flag = document.createElement("span"); Flag.className="Flag"; Flag.textContent=Country_Flag(Country_Row.Code);
+        const Name = document.createElement("span"); Name.className="Bar_Country_Name";Name.textContent=Country_Row.Name;Name.title=Country_Row.Name;
+        Label.append(Flag,Name);
+        const Track = document.createElement("div");Track.className="Bar_Track";
+        const Fill = document.createElement("div");Fill.className="Bar_Fill";Fill.style.width=(Country_Row.Count/Max_Count*100)+"%";Track.append(Fill);
+        const Count = document.createElement("span");Count.className="Bar_Number";Count.textContent=Format_Number(Country_Row.Count);
+        Row.append(Label,Track,Count);Fragment.append(Row);
+      }
+      Top_Chart.append(Fragment);
+    }
+    function Render_Table(){
+      if(!Updated_At)return;
+      const Search_Query = Search_Input.value.trim().toLowerCase();
+      const Filtered_Rows = Country_Rows.filter(Country_Row=>
+        Country_Row.Name.toLowerCase().includes(Search_Query)||Country_Row.Code.toLowerCase().includes(Search_Query));
+      if(Sort_Select.value==="name")Filtered_Rows.sort((First,Second)=>First.Name.localeCompare(Second.Name));
+      else if(Sort_Select.value==="smallest")Filtered_Rows.sort((First,Second)=>First.Count-Second.Count);
+      else Filtered_Rows.sort((First,Second)=>Second.Count-First.Count);
+      Country_Table.textContent="";
+      const Fragment = document.createDocumentFragment();
+      for(const Country_Row of Filtered_Rows){
+        const Row = document.createElement("tr");
+        Row.append(Create_Cell("Rank",String(Country_Row.Rank)));
+        const Location_Cell = document.createElement("td");
+        const Location = document.createElement("div");Location.className="Table_Country";
+        const Flag = document.createElement("span");Flag.className="Flag";Flag.textContent=Country_Flag(Country_Row.Code);
+        const Name = document.createElement("span");Name.className="Table_Name";Name.textContent=Country_Row.Name;
+        const Code = document.createElement("span");Code.className="Table_Code";Code.textContent=Country_Row.Code;
+        const Text = document.createElement("div");Text.append(Name,Code);Location.append(Flag,Text);Location_Cell.append(Location);
+        Row.append(Location_Cell);
+        const Count_Cell = Create_Cell("Table_Count",Format_Number(Country_Row.Count));Row.append(Count_Cell);
+        const Share_Cell = document.createElement("td");
+        const Meter = document.createElement("span");Meter.className="Mini_Progress";
+        const Bar = document.createElement("i");Bar.style.width=(Online_Total?Math.min(100,Country_Row.Count/Online_Total*100):0)+"%";Meter.append(Bar);
+        Share_Cell.append(Meter,document.createTextNode(Format_Percent(Online_Total?Country_Row.Count/Online_Total*100:0)));
+        Row.append(Share_Cell);Fragment.append(Row);
+      }
+      if(!Filtered_Rows.length){
+        const Row=document.createElement("tr");const Cell=Create_Cell("Table_Empty","No countries match your search.");Cell.colSpan=4;Row.append(Cell);Fragment.append(Row);
+      }
+      Country_Table.append(Fragment);
+      document.getElementById("Results_Count").textContent="Showing "+Format_Number(Filtered_Rows.length)+" of "+Format_Number(Country_Rows.length)+" countries and territories";
+    }
+    function Apply_Data(Payload){
+      if(!Payload||typeof Payload!=="object"||!Number.isSafeInteger(Payload.ALL)||Payload.ALL<=0)throw Error("Unrecognized source response");
+      const Entries = Object.entries(Payload).filter(([Code,Count])=>/^[A-Z]{2}$/.test(Code)&&Number.isSafeInteger(Count)&&Count>=0);
+      if(!Entries.length)throw Error("No country counts returned");
+      const Country_Sum = Entries.reduce((Total,[Code,Count])=>Total+Count,0);
+      if(Country_Sum!==Payload.ALL)throw Error("Country totals did not match the source worldwide total");
+      Country_Rows = Entries.map(([Code,Count])=>({Code,Name:Country_Name(Code),Count}))
+        .sort((First,Second)=>Second.Count-First.Count||First.Name.localeCompare(Second.Name))
+        .map((Country_Row,Index)=>({...Country_Row,Rank:Index+1}));
+      Online_Total=Payload.ALL;
+      Updated_At=new Date();
+      Is_Refreshing=false;
+      clearTimeout(Timeout_Handle);Refresh_Button.disabled=false;Export_Button.disabled=false;
+      document.getElementById("World_Total").textContent=Format_Number(Online_Total);
+      document.getElementById("Country_Total").textContent=Format_Number(Country_Rows.length);
+      const Israel_Row=Country_Rows.find(Country_Row=>Country_Row.Code==="IL");
+      document.getElementById("Israel_Total").textContent=Israel_Row?Format_Number(Israel_Row.Count):"—";
+      document.getElementById("Israel_Percent").textContent=Israel_Row?Format_Percent(Israel_Row.Count/Online_Total*100)+" of reported worldwide total":"Not included in latest feed";
+      document.getElementById("Top_Country").textContent=Country_Rows[0].Name;
+      document.getElementById("Top_Country_Note").textContent=Format_Number(Country_Rows[0].Count)+" reported online · "+Format_Percent(Country_Rows[0].Count/Online_Total*100);
+      document.getElementById("Updated_At").textContent="Checked at "+Updated_At.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+      Set_Status("connected","Source connected");
+      Render_Chart();Render_Table();
+    }
+    function Refresh_Data(){
+      if(Is_Refreshing)return;
+      Is_Refreshing=true;Refresh_Button.disabled=true;
+      Set_Status("loading",Updated_At?"Refreshing…":"Connecting to source");
+      document.getElementById("Updated_At").textContent=Updated_At?"Checking for a new reading…":"Waiting for the first reading";
+      clearTimeout(Timeout_Handle);
+      Timeout_Handle=setTimeout(()=>Show_Error("The data feed did not respond. Try refreshing again."),16000);
+      Data_Frame.src=Source_Url+"&_country_pulse="+Date.now();
+    }
+    function Reset_Refresh_Timer(){
+      clearInterval(Refresh_Interval);
+      if(Auto_Refresh.checked)Refresh_Interval=setInterval(()=>{if(!document.hidden)Refresh_Data()},60000);
+    }
+    function Export_Csv(){
+      if(!Updated_At)return;
+      const Csv_Rows=[["Rank","Country","Country code","Reported online","World share"],...Country_Rows.map(Country_Row=>[
+        Country_Row.Rank,Country_Row.Name,Country_Row.Code,Country_Row.Count,(Country_Row.Count/Online_Total*100).toFixed(2)+"%"
+      ])];
+      const Csv_Text=Csv_Rows.map(Fields=>Fields.map(Field=>'"'+String(Field).replaceAll('"','""')+'"').join(",")).join("\r\n");
+      const Csv_Blob=new Blob([Csv_Text],{type:"text/csv;charset=utf-8"});
+      const Download_Url=URL.createObjectURL(Csv_Blob);
+      const Download_Link=document.createElement("a");Download_Link.href=Download_Url;Download_Link.download="country-pulse-"+new Date().toISOString().slice(0,10)+".csv";
+      document.body.append(Download_Link);Download_Link.click();Download_Link.remove();setTimeout(()=>URL.revokeObjectURL(Download_Url),1000);
+    }
+    window.addEventListener("message",Event=>{
+      if(Event.origin!==Source_Origin||Event.source!==Data_Frame.contentWindow)return;
+      if(!Event.data||Event.data.xhrl!=="online")return;
+      try{Apply_Data(Event.data.xhrd)}catch(Error){Show_Error("Source returned an invalid country-count response.")}
+    });
+    Refresh_Button.addEventListener("click",Refresh_Data);
+    Export_Button.addEventListener("click",Export_Csv);
+    Search_Input.addEventListener("input",Render_Table);
+    Sort_Select.addEventListener("change",Render_Table);
+    Auto_Refresh.addEventListener("change",Reset_Refresh_Timer);
+    window.addEventListener("focus",()=>{if(Updated_At&&Date.now()-Updated_At.getTime()>90000)Refresh_Data()});
+    Reset_Refresh_Timer();
+    Refresh_Data();
+  </script>
+</body>
+</html>
