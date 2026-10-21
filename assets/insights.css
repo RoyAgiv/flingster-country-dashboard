@@ -1,0 +1,68 @@
+/* CountryPulse independent historical insights */
+.Top_Limit_Control{display:inline-flex;align-items:center;gap:9px;color:#9eb8c7;font-size:12px}
+.Top_Limit_Control select{min-height:33px;background:#0e2533;border-color:#345867;border-radius:8px;color:#dbf6f1;font-weight:700;padding:5px 27px 5px 9px}
+#Top_Chart{max-height:600px;overflow:auto;scrollbar-width:thin;scrollbar-color:#3f6574 transparent;padding-right:4px}
+.Country_Clickable{cursor:pointer;transition:background .15s}
+.Country_Clickable:hover,.Country_Clickable:focus-visible{background:rgba(91,223,208,.13)!important;outline:1px solid #438c87;outline-offset:-2px}
+.Country_Clickable .Table_Name{color:#dff9f8}
+.Country_Clickable:hover .Table_Name{text-decoration:underline;text-decoration-color:var(--Cyan)}
+.History_Strip{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;background:#101f2d;border:1px solid #294351;border-radius:13px;margin:0 0 18px;flex-wrap:wrap}
+.History_Identity{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.History_Identity strong{font-size:13px;color:#d8f5ef}
+.History_Beacon{width:8px;height:8px;background:#62d5c2;border-radius:50%;box-shadow:0 0 0 4px rgba(98,213,194,.12)}
+.History_Coverage{font-size:12px;color:#95b3c1}
+.Pinned_Rows{display:flex;align-items:center;gap:7px;overflow:auto;scrollbar-width:none}
+.Pinned_Row{border:1px solid #3a6070;background:#1a3441;border-radius:999px;color:#ddf9f5;padding:5px 11px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
+.Pinned_Row:hover{background:#285562}
+.Pinned_Hint{font-size:12px;color:#7f9aa9}
+.Insight_Backdrop[hidden],.Insight_Drawer[hidden]{display:none!important}
+.Insight_Backdrop{position:fixed;inset:0;z-index:60;background:rgba(1,8,15,.71);backdrop-filter:blur(3px)}
+.Insight_Drawer{position:fixed;z-index:61;inset:0 0 0 auto;width:min(570px,100vw);background:#0d1a28;color:#eff9fc;border-left:1px solid #3b5c6d;box-shadow:-20px 0 70px rgba(0,0,0,.48);overflow-y:auto;scrollbar-color:#3e5f6c transparent;outline:0}
+.Insight_Inner{max-width:630px;padding:27px 27px 36px;margin:auto}
+.Insight_Top{display:flex;align-items:center;justify-content:space-between;margin-bottom:21px}
+.Insight_Eyebrow{text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#71d9ce}
+.Insight_Icon_Button{border:1px solid #334f60;background:#172c39;border-radius:9px;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;color:#dff4f7;font-size:20px;cursor:pointer}
+.Insight_Icon_Button:hover{background:#234455}
+.Insight_Title_Row{display:flex;align-items:center;gap:13px}
+.Insight_Country_Flag{font-size:34px;line-height:1}
+.Insight_Country_Name{margin:0;font-size:clamp(25px,3vw,32px);font-weight:850;letter-spacing:-1px;line-height:1.2}
+.Insight_Country_Code{color:#8fafbd;font-size:12px;margin-top:3px}
+.Insight_Star[data-pinned="true"]{color:#ffdb8c;border-color:#846443}
+.Insight_Lead{font-size:12px;color:#93adbd;margin:10px 0 17px}
+.Insight_Controls{display:flex;gap:9px;margin:22px 0 18px;flex-wrap:wrap}
+.Insight_Controls select{font-size:12px;flex:1;min-width:170px;background:#172939}
+.Insight_Stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px}
+.Insight_Stat{border:1px solid #294455;background:#132534;border-radius:12px;padding:14px 12px;min-width:0}
+.Insight_Stat_Label{font-size:11px;color:#99b3c2}
+.Insight_Stat_Value{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.8px;margin-top:6px;overflow:hidden;text-overflow:ellipsis}
+.Insight_Stat_Value.Glow{color:#86efda}
+.Insight_Stat_Foot{font-size:10px;color:#738d9d}
+.Insight_Section{background:#112230;border:1px solid #294454;border-radius:13px;padding:17px;margin-top:12px}
+.Insight_Section_Head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.Insight_Section h3{font-size:14px;font-weight:800;letter-spacing:-.15px;margin:0}
+.Insight_Mini_Label{font-size:10px;color:#8da8b7}
+.Insight_Trend_Container{min-height:148px;display:flex;align-items:center;justify-content:center}
+.Insight_Trend_Svg{width:100%;height:155px;overflow:visible;display:block}
+.Insight_Trend_Svg .Area{fill:rgba(90,205,192,.15)}
+.Insight_Trend_Svg .Stroke{fill:none;stroke:#64decd;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.Insight_Trend_Svg .Grid_Line{stroke:#375061;stroke-width:1;stroke-dasharray:3 5}
+.Insight_Trend_Svg .Last_Dot{fill:#b0ffed;stroke:#174a4a;stroke-width:4}
+.Insight_Trend_Labels{display:flex;justify-content:space-between;color:#7994a5;font-size:11px;margin-top:5px}
+.Insight_Empty{color:#8daabb;font-size:13px;text-align:center;padding:33px 9px;line-height:1.7}
+.Insight_Peak_Cards{display:flex;gap:8px;margin:15px 0;flex-wrap:wrap}
+.Insight_Peak{flex:1;min-width:110px;padding:10px 12px;border:1px solid #3d686b;border-radius:10px;background:#173b40}
+.Insight_Peak b{font-size:15px;color:#9ff2e6;display:block}
+.Insight_Peak span{color:#91b6b7;font-size:11px}
+.Insight_Hour_Grid{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:5px;align-items:end;min-height:104px;padding-top:7px}
+.Insight_Hour_Column{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;gap:5px}
+.Insight_Hour_Bar{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(0deg,#327889,#55cdbd);opacity:.83;min-height:3px}
+.Insight_Hour_Bar.Highlight{background:linear-gradient(0deg,#64b4a7,#b5fff0);opacity:1}
+.Insight_Hour_Bar.Empty{background:#273e4a;opacity:.5}
+.Insight_Hour_Column label{font-size:9px;color:#819cad;height:12px;white-space:nowrap}
+.Insight_Disclaimer{display:flex;gap:7px;margin-top:12px;color:#8fa9b8;font-size:11px;line-height:1.6}
+.Insight_Disclaimer b{color:#d4e6e6}
+.Insight_Empty_Hours{padding:14px 2px 2px;color:#91aab7;font-size:12px}
+.Insight_Sample_Progress{background:#283c4c;height:4px;border-radius:8px;overflow:hidden;margin:9px 0 2px}
+.Insight_Sample_Progress span{display:block;background:linear-gradient(90deg,#3e8e9b,#67e1c9);height:100%;width:0}
+body.Insight_Drawer_Open{overflow:hidden}
+@media(max-width:570px){.History_Strip{padding:13px 14px}.Insight_Inner{padding:22px 17px 35px}.Insight_Controls select{min-width:130px}.Insight_Stats{gap:6px}.Insight_Stat{padding:12px 9px}.Insight_Stat_Value{font-size:21px}.Insight_Hour_Grid{gap:3px}.Insight_Hour_Column label{font-size:8px}.Insight_Peak{min-width:99px}.Top_Limit_Control{font-size:11px}}

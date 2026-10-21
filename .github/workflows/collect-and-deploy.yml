@@ -1,0 +1,82 @@
+name: CountryPulse · Capture and publish
+
+on:
+  schedule:
+    # About every 30 minutes; avoid the busiest minute at the top of the hour.
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: countrypulse-history-and-pages
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Validate the collector and historical calculations
+        run: node --test tests/*.test.mjs
+
+      - name: Capture one public country-count snapshot
+        run: node scripts/collect.mjs
+
+      - name: Save changed history to the repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/history.json; then
+            echo "No new half-hour reading; no commit needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/history.json
+          git commit -m "Record country counts ($(date -u +%Y-%m-%dT%H:%MZ))"
+          # Never force-push, reset, or overwrite another agent's updates.
+          # On a non-fast-forward race, fail so the next scheduled run can retry safely.
+          git push origin HEAD:main
+
+      - name: Prepare the site artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site/assets _site/data
+          cp index.html _site/index.html
+          cp assets/insights.mjs assets/insights-utils.mjs assets/insights.css _site/assets/
+          cp data/history.json _site/data/history.json
+          touch _site/.nojekyll
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy updated dashboard and history
+        id: deployment
+        uses: actions/deploy-pages@v4

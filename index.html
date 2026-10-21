@@ -69,6 +69,7 @@
     @media(max-width:520px){.Shell{padding:0 15px 50px}.Site_Bar{min-height:69px}.Brand{font-size:19px}.Hero{gap:19px}h1{letter-spacing:-1.8px}.Card{min-height:119px;padding:17px 14px}.Card_Value{font-size:28px}.Card_Value.Small{font-size:19px}.Card_Note{font-size:10px}.Panel{padding:18px 15px}.Bar_Row{grid-template-columns:minmax(95px,1fr) minmax(60px,1.25fr) 54px;gap:9px}.Bar_Country{gap:5px}.Bar_Country_Name{font-size:12px}.Search_Wrap,input[type="search"]{width:100%}.Controls{width:100%}.Controls select{flex:1}.Table_Head{align-items:stretch}.Site_Bar .Status{font-size:11px}.Stat_Grid{gap:10px}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition:none!important}}
   </style>
+  <link rel="stylesheet" href="./assets/insights.css">
 </head>
 <body>
   <main class="Shell">
@@ -99,7 +100,7 @@
     <section class="Content_Grid">
       <article class="Panel">
         <div class="Panel_Head">
-          <div><h2>Most active countries</h2><p class="Subheading">Top 10 by reported online count</p></div>
+          <div><h2>Most active countries</h2><p class="Subheading">Ranked by reported online count</p></div>
           <span class="Tiny_Tag">COUNTRY RANKING</span>
         </div>
         <div class="Bars" id="Top_Chart" aria-live="polite"><div class="Loading"><b></b>Loading the country ranking…</div></div>
@@ -189,7 +190,7 @@
       return Cell;
     }
     function Render_Chart(){
-      const Top_Rows = Country_Rows.slice().sort((First,Second)=>Second.Count-First.Count).slice(0,10);
+      const Top_Rows = Country_Rows.slice().sort((First,Second)=>Second.Count-First.Count).slice(0,Number(document.getElementById("Top_Limit")?.value || 10));
       const Max_Count = Top_Rows.length ? Top_Rows[0].Count : 1;
       Top_Chart.textContent="";
       const Fragment = document.createDocumentFragment();
@@ -218,6 +219,10 @@
       const Fragment = document.createDocumentFragment();
       for(const Country_Row of Filtered_Rows){
         const Row = document.createElement("tr");
+        Row.dataset.countryCode = Country_Row.Code;
+        Row.tabIndex = 0;
+        Row.classList.add("Country_Clickable");
+        Row.title = "See activity history for " + Country_Row.Name;
         Row.append(Create_Cell("Rank",String(Country_Row.Rank)));
         const Location_Cell = document.createElement("td");
         const Location = document.createElement("div");Location.className="Table_Country";
@@ -262,6 +267,7 @@
       document.getElementById("Updated_At").textContent="Checked at "+Updated_At.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
       Set_Status("connected","Source connected");
       Render_Chart();Render_Table();
+      window.dispatchEvent(new CustomEvent("countrypulse:data", { detail: { Country_Rows, Online_Total } }));
     }
     function Refresh_Data(){
       if(Is_Refreshing)return;
@@ -296,10 +302,12 @@
     Export_Button.addEventListener("click",Export_Csv);
     Search_Input.addEventListener("input",Render_Table);
     Sort_Select.addEventListener("change",Render_Table);
+    window.addEventListener("countrypulse:chart-limit",Render_Chart);
     Auto_Refresh.addEventListener("change",Reset_Refresh_Timer);
     window.addEventListener("focus",()=>{if(Updated_At&&Date.now()-Updated_At.getTime()>90000)Refresh_Data()});
     Reset_Refresh_Timer();
     Refresh_Data();
   </script>
+  <script type="module" src="./assets/insights.mjs"></script>
 </body>
 </html>
