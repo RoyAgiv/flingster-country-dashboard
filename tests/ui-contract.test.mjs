@@ -10,6 +10,7 @@ Test("country chart fills its own content rather than a stretched grid cell", as
   Assert.match(Styles, /\.Content_Grid\{align-items:start\}/);
   Assert.match(Styles, /#Top_Chart\{min-height:0/);
   Assert.match(Insights, /Select.value = "25"/);
+  Assert.match(Insights, /Select.dispatchEvent\(new Event\("change"\)\)/);
   Assert.match(Insights, /Top_Chart_Info/);
   Assert.match(Insights, /countries · scroll for more/);
   Assert.match(Html, /assets\/polish\.css/);

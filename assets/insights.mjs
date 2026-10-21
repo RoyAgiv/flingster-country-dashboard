@@ -348,7 +348,8 @@ function Create_Interface() {
     Show_All.textContent = "Show all";
     Show_All.addEventListener("click", () => {
       Select.value = "1000";
-      window.dispatchEvent(new Event("countrypulse:chart-limit"));
+      // Reuse the actual select-change event so the chart AND count label stay synchronized.
+      Select.dispatchEvent(new Event("change"));
     });
     Chart_Footer.append(Chart_Info, Show_All);
     Top_Chart.after(Chart_Footer);
