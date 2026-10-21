@@ -1,0 +1,24 @@
+/* Optional private MatchLab workspace */
+.MatchLab_Body{padding:17px 19px;border-top:1px solid #2a4654}
+.MatchLab_Form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+.MatchLab_Field{display:grid;gap:5px;min-width:0}
+.MatchLab_Field span{font-size:11px;color:#aac2ce}
+.MatchLab_Field input,.MatchLab_Field select{min-height:38px;padding:7px 9px;width:100%;background:#0f2130;border:1px solid #35566a;border-radius:8px;color:#e8f7fb;font-size:12px}
+.MatchLab_Actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0}
+.MatchLab_Button{border:1px solid #4c746d;background:#194946;color:#d9f9ed;font-weight:750;font-size:12px;border-radius:9px;padding:10px 14px}
+.MatchLab_Button:hover{background:#27615b}
+.MatchLab_Button.Secondary{background:#172f3b;border-color:#36596a;color:#bed8e3}
+.MatchLab_Button.Danger{color:#ffb7ae;border-color:#864e4c;background:#402d34}
+.MatchLab_Active[hidden]{display:none}
+.MatchLab_Active{background:#143a3e;border:1px solid #4f8f84;padding:13px 15px;border-radius:12px;margin:13px 0}
+.MatchLab_Clock{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;color:#b7fff0}
+.MatchLab_Stats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.MatchLab_Stat{border:1px solid #315361;background:#152b3b;border-radius:9px;padding:10px 14px;flex:1;min-width:110px}
+.MatchLab_Stat strong{font-size:17px;display:block;font-variant-numeric:tabular-nums}
+.MatchLab_Stat span{font-size:11px;color:#a4bece}
+.MatchLab_Row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 3px;border-bottom:1px solid #304957;flex-wrap:wrap;font-size:12px;color:#c5dde3}
+.MatchLab_Foot{font-size:11px;color:#8eacb7;margin-top:10px;line-height:1.5}
+.MatchLab_Feedback{font-size:12px;color:#9de7d5;min-height:20px}
+.MatchLab_Feedback[data-error="true"]{color:#ffb4a4}
+@media(max-width:780px){.MatchLab_Form{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.MatchLab_Form{grid-template-columns:1fr}.MatchLab_Body{padding:12px}}

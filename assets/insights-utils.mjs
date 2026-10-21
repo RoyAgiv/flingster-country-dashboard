@@ -60,3 +60,9 @@ export function Compare_Day_Over_Day(Snapshots, Country_Code) {
   if (!Previous || !Previous.c[Country_Code]) return null;
   return Math.round(((Latest.c[Country_Code] / Previous.c[Country_Code]) - 1) * 100);
 }
+
+export function Calculate_Observed_Peak(Live_Count, Historical_Maximum) {
+  const Valid = [Live_Count, Historical_Maximum].filter((Count) =>
+    Number.isSafeInteger(Count) && Count >= 0);
+  return Valid.length ? Math.max(...Valid) : null;
+}

@@ -14,6 +14,16 @@ CountryPulse is a lightweight, searchable dashboard for activity **reported** by
 - Data-quality notes identify suspicious multiple-of-seven and multiple-of-twelve patterns and repeated saved snapshots. Flags indicate uncertainty, not proof of intentional inflation.
 - An expandable research section contains September 2026 **estimated website visits** from Semrush and links to the historical DirtyRoulette research archive. Website traffic is distinct from simultaneous chat activity.
 
+## CountryPulse 4: provenance and matching tools
+
+- The ranking defaults to **Top 25**, uses a bounded scroll area, has **Show all**, and no longer stretches to the height of the neighboring trend card.
+- In a country drawer, **Highest observed** includes the latest live reading plus saved peaks for the selected period, so it can never be lower than **Reported now**. The recorded average still uses saved history only.
+- **Server consistency** compares up to three publicly accessible hosts (rest, rest2, and api) for Adult and Default, and stores bounded total/member-count summaries alongside new 30-minute snapshots. Replica failures are nonfatal. These hosts may share backend infrastructure and do not establish independently verified unique users.
+- **Member growth** is withheld when host totals disagree, the current counter differs too much from the last check, or no valid prior-day cross-check exists.
+- The expandable research area has historical 2026 Semrush website and device estimates, the 2021 DirtyRoulette study, and specialized page shortcuts. These are separate from live pool statistics.
+- **Interest checker** uses the previously observed October 2026 accepted/rejected tags only, clearly indicating that it is not real-time validation. Unseen tags remain unknown.
+- **MatchLab** optionally records anonymous session settings, duration, connection counts and worthwhile matches solely in your browser local storage. Data is not uploaded. Recommendations require at least two sessions and 30 minutes per interest.
+
 ## Collection
 
 The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.

@@ -1,4 +1,4 @@
-import { Aggregate_Hourly, Compare_Day_Over_Day } from "./insights-utils.mjs";
+import { Aggregate_Hourly, Compare_Day_Over_Day, Calculate_Observed_Peak } from "./insights-utils.mjs";
 import { Get_Pool_Snapshots, Get_Pool_Reading, Calculate_Weekend_Average } from "./trends-utils.mjs";
 
 const Format_Number = new Intl.NumberFormat("en-US");
@@ -109,6 +109,16 @@ function Render_Trend(Samples) {
   const Label = document.getElementById("Insight_Trend_Labels");
   Container.replaceChildren();
   Label.replaceChildren();
+  Container.classList.toggle("Single", Samples.length < 2);
+  if (Samples.length === 1) {
+    const First_Reading = document.createElement("div");
+    First_Reading.className = "Insight_Empty";
+    First_Reading.textContent = "First saved reading: " +
+      Format_Number.format(Samples[0].Count) +
+      ". Activity trend appears after another reading.";
+    Container.append(First_Reading);
+    return;
+  }
   if (!Samples.length) {
     const Empty = document.createElement("div");
     Empty.className = "Insight_Empty";
@@ -154,11 +164,13 @@ function Render_Hours(Insight) {
   Peaks.replaceChildren();
   Grid.replaceChildren();
   const Qualified = Insight.Peak_Hours;
+  Grid.classList.toggle("Insufficient", Qualified.length === 0);
   if (!Qualified.length) {
     const Empty = document.createElement("div");
     Empty.className = "Insight_Empty_Hours";
     Empty.textContent = "Best hours will appear after there are readings on multiple days.";
     Peaks.append(Empty);
+    return;
   } else {
     for (const Bin of Qualified) {
       const Card = document.createElement("div");
@@ -201,7 +213,14 @@ function Render_Country() {
   Set_Text("Insight_Code", Selected_Country_Code + " · " + Selected_Pool + " · " + Percentage);
   Set_Text("Insight_Now", Country ? Format_Number.format(Country.Count) : "—");
   Set_Text("Insight_Average", Insight.Average_Count === null ? "—" : Format_Number.format(Insight.Average_Count));
-  Set_Text("Insight_Peak", Insight.Maximum_Count === null ? "—" : Format_Number.format(Insight.Maximum_Count));
+  // A live reading can exceed the most recently saved high; show a comparable peak.
+  const Peak_With_Live = Calculate_Observed_Peak(Country?.Count, Insight.Maximum_Count);
+  Set_Text("Insight_Peak", Peak_With_Live > 0 ? Format_Number.format(Peak_With_Live) : "—");
+  document.getElementById("Insight_Peak").dataset.livePeak =
+    String(Country && Country.Count >= (Insight.Maximum_Count ?? 0));
+  const Peak_Foot = document.getElementById("Insight_Peak").closest(".Insight_Stat")
+    .querySelector(".Insight_Stat_Foot");
+  Peak_Foot.textContent = "Saved history + latest live reading";
   Set_Text("Insight_Chart_Subtitle", Insight.Sample_Count + " saved readings · " + Insight.Observation_Days + " days observed");
   Set_Text("Insight_Hours_Label", Selected_Timezone === "utc" ? "UTC" : "Your time · " + Browser_Timezone.replaceAll("_", " "));
   const Day_Change = Compare_Day_Over_Day(Insight.Samples.map((Sample) => ({ t: Sample.t, c: { [Selected_Country_Code]: Sample.Count } })), Selected_Country_Code);
@@ -318,6 +337,32 @@ function Create_Interface() {
     Select.addEventListener("change", () => window.dispatchEvent(new Event("countrypulse:chart-limit")));
     Label.append(Select);
     Badge.replaceWith(Label);
+    Select.value = "25";
+    const Chart_Footer = document.createElement("div");
+    Chart_Footer.className = "Chart_Count_Foot";
+    const Chart_Info = document.createElement("span");
+    Chart_Info.id = "Top_Chart_Info";
+    Chart_Info.textContent = "Showing more countries · scroll to explore";
+    const Show_All = document.createElement("button");
+    Show_All.type = "button";
+    Show_All.textContent = "Show all";
+    Show_All.addEventListener("click", () => {
+      Select.value = "1000";
+      window.dispatchEvent(new Event("countrypulse:chart-limit"));
+    });
+    Chart_Footer.append(Chart_Info, Show_All);
+    Top_Chart.after(Chart_Footer);
+    const Update_Footer = () => {
+      const Latest = window.CountryPulse_Data;
+      const Total = Latest?.Country_Rows?.length || 0;
+      const Displayed = Math.min(Number(Select.value), Total);
+      Chart_Info.textContent = Total ? "Showing " + Displayed + " of " +
+        Total + " countries · scroll for more" : "Loading countries…";
+      Show_All.hidden = !Total || Displayed >= Total;
+    };
+    Select.addEventListener("change", Update_Footer);
+    window.addEventListener("countrypulse:data", Update_Footer);
+    window.dispatchEvent(new Event("countrypulse:chart-limit"));
   }
 
   History_Strip.className = "History_Strip";
@@ -338,7 +383,7 @@ function Create_Interface() {
       '<div class="Insight_Title_Row"><span class="Insight_Country_Flag" id="Insight_Flag"></span><div style="flex:1;min-width:0"><h2 class="Insight_Country_Name" id="Insight_Name"></h2><div class="Insight_Country_Code" id="Insight_Code"></div></div><button class="Insight_Icon_Button Insight_Star" id="Insight_Star" type="button" aria-label="Pin country">☆</button></div>' +
       '<p class="Insight_Lead">When is this country most active in the reported feed?</p>' +
       '<div class="Insight_Controls"><select id="Insight_Period" aria-label="Historical period"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select><select id="Insight_Timezone" aria-label="Timezone for best hours"><option value="local" selected>Hours in my timezone</option><option value="utc">Hours in UTC</option></select></div>' +
-      '<div class="Insight_Stats"><div class="Insight_Stat"><div class="Insight_Stat_Label">Reported now</div><div class="Insight_Stat_Value Glow" id="Insight_Now">—</div><div class="Insight_Stat_Foot">Live feed</div></div><div class="Insight_Stat"><div class="Insight_Stat_Label">Recorded average</div><div class="Insight_Stat_Value" id="Insight_Average">—</div><div class="Insight_Stat_Foot">Selected period</div></div><div class="Insight_Stat"><div class="Insight_Stat_Label">Highest recorded</div><div class="Insight_Stat_Value" id="Insight_Peak">—</div><div class="Insight_Stat_Foot">Selected period</div></div></div>' +
+      '<div class="Insight_Stats"><div class="Insight_Stat"><div class="Insight_Stat_Label">Reported now</div><div class="Insight_Stat_Value Glow" id="Insight_Now">—</div><div class="Insight_Stat_Foot">Live feed</div></div><div class="Insight_Stat"><div class="Insight_Stat_Label">Recorded average</div><div class="Insight_Stat_Value" id="Insight_Average">—</div><div class="Insight_Stat_Foot">Selected period</div></div><div class="Insight_Stat"><div class="Insight_Stat_Label">Highest observed</div><div class="Insight_Stat_Value" id="Insight_Peak">—</div><div class="Insight_Stat_Foot">Selected period</div></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>Activity over time</h3><span class="Insight_Mini_Label" id="Insight_Chart_Subtitle"></span></div><div class="Insight_Trend_Container" id="Insight_Trend"></div><div class="Insight_Trend_Labels" id="Insight_Trend_Labels"></div><div class="Insight_Disclaimer"><span aria-hidden="true">↗</span><span id="Insight_Day_Change"></span></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>Best hours on average</h3><span class="Insight_Mini_Label" id="Insight_Hours_Label"></span></div><div class="Insight_Peak_Cards" id="Insight_Peaks"></div><div class="Insight_Hour_Grid" id="Insight_Hours"></div><div class="Insight_Disclaimer"><span aria-hidden="true">ⓘ</span><span id="Insight_Quality"></span></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>History coverage</h3><span class="Insight_Mini_Label">Goal: ~2 readings/hour</span></div><div class="Insight_Mini_Label" id="Insight_Coverage"></div><div class="Insight_Sample_Progress"><span id="Insight_Coverage_Bar"></span></div><div class="Insight_Disclaimer">Stored automatically about every 30 minutes, subject to GitHub scheduling delays. 45-day rolling storage. Averages reflect unverified site-reported counts.</div></div>' +

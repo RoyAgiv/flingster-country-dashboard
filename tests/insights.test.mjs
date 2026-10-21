@@ -1,6 +1,6 @@
 import Test from "node:test";
 import Assert from "node:assert/strict";
-import { Aggregate_Hourly, Compare_Day_Over_Day } from "../assets/insights-utils.mjs";
+import { Aggregate_Hourly, Compare_Day_Over_Day, Calculate_Observed_Peak } from "../assets/insights-utils.mjs";
 
 function Snapshot(ISOString, Country_Count) {
   return { t: Math.floor(new Date(ISOString).getTime() / 1000), n: Country_Count + 10, c: { IL: Country_Count, US: 10 } };
@@ -58,4 +58,12 @@ Test("invalid hourly data remains an unavailable rather than a fake trend", () =
   Assert.equal(Result.Peak_Hours.length, 0);
   Assert.equal(Result.Average_Count, null);
   Assert.equal(Result.Hourly.every((Hour) => Hour.Average === null), true);
+});
+
+
+Test("current live value cannot exceed the displayed highest observed", () => {
+  Assert.equal(Calculate_Observed_Peak(11901, 11336), 11901);
+  Assert.equal(Calculate_Observed_Peak(10000, 11336), 11336);
+  Assert.equal(Calculate_Observed_Peak(11901, null), 11901);
+  Assert.equal(Calculate_Observed_Peak(undefined, undefined), null);
 });

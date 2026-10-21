@@ -60,9 +60,13 @@ export function Merge_Snapshot_History(Existing_History, New_Snapshot, Now_Secon
   };
 }
 
-export async function Fetch_Online_Response(Fetch_Function = fetch, Room = "Adult") {
+export async function Fetch_Online_Response(Fetch_Function = fetch, Room = "Adult", Host_Name = "rest.flingster.com") {
   if (!Pool_Names.includes(Room)) throw new Error("Unsupported activity pool");
+  if (!["rest.flingster.com", "rest2.flingster.com", "api.flingster.com"].includes(Host_Name)) {
+    throw new Error("Unsupported statistics host");
+  }
   const Request_Url = new URL(Source_Url);
+  Request_Url.hostname = Host_Name;
   Request_Url.searchParams.set("room", Room === "Combined" ? "Adult,Default" : Room);
   Request_Url.searchParams.set("ver", String(Date.now()));
   let Last_Error = null;
@@ -98,12 +102,36 @@ export async function Collect_Once() {
     Fetch_Online_Response(fetch, "Default"),
     Fetch_Online_Response(fetch, "Combined"),
   ]);
+  // Optional cross-checks are nonblocking: a replica outage must not erase a valid primary reading.
+  const Replica_Queries = [
+    { Host_Name: "rest2.flingster.com", Room: "Adult" },
+    { Host_Name: "api.flingster.com", Room: "Adult" },
+    { Host_Name: "rest2.flingster.com", Room: "Default" },
+    { Host_Name: "api.flingster.com", Room: "Default" },
+  ];
+  const Replica_Results = await Promise.allSettled(Replica_Queries.map((Entry) =>
+    Fetch_Online_Response(fetch, Entry.Room, Entry.Host_Name)));
+  const Summarize_Source = (Host_Name, Snapshot) => ({
+    host: Host_Name, n: Snapshot.n, members: Snapshot.members ?? null,
+    countries: Object.keys(Snapshot.c).length,
+    il: Snapshot.c.IL ?? null, us: Snapshot.c.US ?? null,
+  });
+  const Checks = {
+    Adult: [Summarize_Source("rest.flingster.com", Adult_Snapshot)],
+    Default: [Summarize_Source("rest.flingster.com", Default_Snapshot)],
+  };
+  Replica_Results.forEach((Result, Index) => {
+    if (Result.status !== "fulfilled") return;
+    const Query = Replica_Queries[Index];
+    Checks[Query.Room].push(Summarize_Source(Query.Host_Name, Result.value));
+  });
   const Incoming_Snapshot = {
     ...Adult_Snapshot,
     rooms: {
       Default: { n: Default_Snapshot.n, c: Default_Snapshot.c },
       Combined: { n: Combined_Snapshot.n, c: Combined_Snapshot.c },
     },
+    checks: Checks,
   };
   const New_History = Merge_Snapshot_History(Existing_History, Incoming_Snapshot, Incoming_Snapshot.t);
   if (JSON.stringify(New_History.snapshots) === JSON.stringify(Existing_History.snapshots)) {
