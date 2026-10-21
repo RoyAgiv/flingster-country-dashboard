@@ -208,7 +208,7 @@ function Render_Country() {
     (Insight.Reliable_Enough ? "Average based on sampled hours; readings are site-reported, not verified people." :
     "Preliminary pattern. Several days of readings improve reliability."));
   const Coverage_Target = Selected_Period * 48;
-  const Coverage = Math.min(100, Math.round(Insight.Sample_Count / Coverage_Target * 100));
+  const Coverage = Math.min(100, Math.round(Insight.Sample_Count / Coverage_Target * 1000) / 10);
   const Coverage_Bar = document.getElementById("Insight_Coverage_Bar");
   Coverage_Bar.style.width = Coverage + "%";
   Set_Text("Insight_Coverage", Coverage + "% coverage of selected period · " + Insight.Sample_Count + " readings");
@@ -248,7 +248,7 @@ function Update_History_Status() {
   const Hour_Difference = Math.max(0, Math.floor((Date.now() / 1000 - Last.t) / 3600));
   const Age = Hour_Difference >= 1 ? (Hour_Difference + "h ago") :
     (Math.max(0, Math.floor((Date.now() / 1000 - Last.t) / 60)) + "m ago");
-  Element.textContent = Historical_Snapshots.length + " snapshots · first " + Date_Short(First.t) + " · last " + Age;
+  Element.textContent = Historical_Snapshots.length + (Historical_Snapshots.length === 1 ? " snapshot" : " snapshots") + " · first " + Date_Short(First.t) + " · last " + Age;
 }
 
 async function Load_History() {
