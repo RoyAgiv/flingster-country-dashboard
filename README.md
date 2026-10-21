@@ -24,6 +24,25 @@ CountryPulse is a lightweight, searchable dashboard for activity **reported** by
 - **Interest checker** uses the previously observed October 2026 accepted/rejected tags only, clearly indicating that it is not real-time validation. Unseen tags remain unknown.
 - **MatchLab** optionally records anonymous session settings, duration, connection counts and worthwhile matches solely in your browser local storage. Data is not uploaded. Recommendations require at least two sessions and 30 minutes per interest.
 
+## Centered country explorer and population context
+
+Clicking any country opens a **centered, keyboard-accessible modal** that prioritizes the provider-reported online count, recent average, saved peak, and historical activity. The country popup uses a two-column chart layout on desktop and one column on mobile.
+
+Below the main metrics is a deliberately small context line comparing the **reported** country online count against that country's latest available World Bank population. It shows the fraction as a very small percentage and as reported online counts per million residents. This does **not** measure the actual penetration of Flingster among the country population; values are provider-reported and may include shared partner activity.
+
+A source-labeled **hypothetical gender/couples scenario calculator** supports the following starting assumptions:
+
+- **Flingster review** — DatingScout October 2026, 70% men, 30% women; couples share unreported.
+- **DirtyRoulette review** — Monkey App Alternatives, 85% men, 15% women; weak unverified methodology.
+- **Tinder example** — SwipeStats 2026 sample, 67% men, 33% women; a different platform, not a Flingster measurement.
+- **Custom assumptions** — editable women and couples shares, with men calculated as the remainder.
+
+A source option with 0% couples is only a modeling default, **not evidence that no couples are online**. All resulting counts are examples, not live gender/couple data. No public country-specific gender statistics are currently available.
+
+Country details also compare **Adult versus Default country share of each separate reported pool**, without interpreting it as user gender, tag demand, or distinct audience identity. The shared interest tags are suggestions rather than a verified popularity ranking, and some valid interests are missing from the suggestion list.
+
+Population reference values come from the [World Bank's Population, total indicator](https://data.worldbank.org/indicator/SP.POP.TOTL), refreshed approximately monthly through the existing GitHub Actions collector. Countries missing official data show an unavailable state rather than a fabricated population.
+
 ## Collection
 
 The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.

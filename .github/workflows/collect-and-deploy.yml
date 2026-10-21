@@ -35,17 +35,21 @@ jobs:
       - name: Capture one public country-count snapshot
         run: node scripts/collect.mjs
 
+      - name: Refresh World Bank population when older than 30 days
+        run: node scripts/update-population.mjs
+        continue-on-error: true
+
       - name: Save changed history to the repository
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- data/history.json; then
-            echo "No new half-hour reading; no commit needed."
+          if git diff --quiet -- data/history.json data/population.json; then
+            echo "No new history or population update; no commit needed."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- data/history.json
+          git add -- data/history.json data/population.json
           git commit -m "Record country counts ($(date -u +%Y-%m-%dT%H:%MZ))"
           # Never force-push, reset, or overwrite another agent's updates.
           # On a non-fast-forward race, fail so the next scheduled run can retry safely.
@@ -58,7 +62,7 @@ jobs:
           mkdir -p _site/assets _site/data
           cp index.html _site/index.html
           cp assets/*.mjs assets/*.css _site/assets/
-          cp data/history.json _site/data/history.json
+          cp data/*.json _site/data/
           touch _site/.nojekyll
 
       - name: Upload GitHub Pages artifact

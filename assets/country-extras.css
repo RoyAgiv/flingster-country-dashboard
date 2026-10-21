@@ -1,0 +1,69 @@
+/* CountryPulse country details — centered modal, quiet population metrics, modeled splits */
+.Insight_Drawer{
+  inset:auto;
+  left:50%;top:50%;right:auto;bottom:auto;
+  transform:translate(-50%,-50%);
+  width:min(980px,calc(100vw - 42px));
+  max-height:min(92dvh,960px);
+  background:#0d1a28;
+  border:1px solid #3d6170;
+  border-radius:19px;
+  box-shadow:0 32px 100px rgba(0,0,0,.65);
+  overflow-x:hidden;overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.Insight_Inner{max-width:none;padding:26px 29px 32px}
+.Insight_Top{position:sticky;top:-26px;background:#0d1a28;z-index:4;margin:-3px 0 18px;padding:7px 0 11px;border-bottom:1px solid #284454}
+.Insight_Detail_Grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.95fr);gap:12px}
+.Insight_Detail_Grid>.Insight_Section{min-width:0;margin-top:0}
+.Insight_Detail_Grid .Insight_Section_Head{flex-wrap:wrap}
+.Insight_Detail_Grid .Insight_Trend_Svg{height:135px}
+.Insight_Stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.Insight_Stat_Value{font-size:clamp(22px,2.2vw,29px)}
+.Population_Line{display:flex;align-items:center;flex-wrap:wrap;gap:7px;color:#92adb8;font-size:11px;line-height:1.4;margin:4px 0 15px}
+.Population_Line .Population_Pip{height:6px;width:6px;border-radius:100%;background:#5bafa9;box-shadow:0 0 0 4px rgba(91,175,169,.10)}
+.Population_Line b{font-weight:750;color:#cae7e6}
+.Population_Line a{color:#8caaa8;font-size:11px}
+.Pool_Share_Line{font-size:11px;color:#93b3c0;line-height:1.5;margin:-3px 0 14px}
+.Pool_Share_Line b{color:#a9e8d8}
+.Scenario_Section{background:#122a37;border:1px solid #365463;border-radius:13px;padding:15px 17px;margin:10px 0 13px}
+.Scenario_Head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.Scenario_Head h3{font-size:14px;margin:0;font-weight:820;letter-spacing:-.15px}
+.Scenario_Estimate_Tag{font-size:10px;color:#e3c79f;border-radius:7px;border:1px solid #746044;padding:4px 7px;font-weight:800}
+.Scenario_Sources{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.Scenario_Sources select{min-height:36px;padding:7px 28px 7px 9px;color:#e4f7f6;background:#0d202e;border:1px solid #3d6470;border-radius:9px;flex:1;min-width:205px;font-size:12px}
+.Scenario_Source_Link{font-size:11px;color:#7fd6ce;white-space:nowrap}
+.Scenario_Explanation{font-size:11px;color:#96aebb;line-height:1.5;margin:7px 0 10px}
+.Scenario_Sliders{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0}
+.Scenario_Slider{min-width:0}
+.Scenario_Slider_Header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#a9c7cd}
+.Scenario_Slider_Header b{color:#e3f2f5;font-size:12px}
+.Scenario_Slider input{width:100%;accent-color:#78d7c7;height:17px;cursor:pointer}
+.Scenario_Values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:9px}
+.Scenario_Value{background:#172f3d;border:1px solid #31525e;border-radius:9px;padding:9px 11px;min-width:0}
+.Scenario_Value label{display:block;color:#9fb8c4;font-size:11px}
+.Scenario_Value strong{display:block;font-size:21px;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.Scenario_Value span{display:block;font-size:11px;color:#89abb4}
+.Scenario_Bar{display:flex;width:100%;height:7px;border-radius:999px;overflow:hidden;background:#284354;margin-top:12px}
+.Scenario_Bar>span{height:100%;transition:width .18s}
+.Scenario_Bar .Men{background:#6d9be8}
+.Scenario_Bar .Women{background:#e39cb4}
+.Scenario_Bar .Couples{background:#d8c780}
+.Scenario_Foot{color:#93aeb8;font-size:10.5px;margin-top:8px;line-height:1.5}
+@media(max-width:760px){
+ .Insight_Drawer{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:15px}
+ .Insight_Inner{padding:20px 15px 26px}
+ .Insight_Top{top:-20px}
+ .Insight_Detail_Grid{grid-template-columns:1fr}
+ .Insight_Detail_Grid>.Insight_Section{margin-top:0}
+ .Insight_Detail_Grid>.Insight_Section+.Insight_Section{margin-top:10px}
+}
+@media(max-width:425px){
+ .Insight_Drawer{width:calc(100vw - 12px);max-height:calc(100dvh - 12px)}
+ .Insight_Inner{padding:18px 12px 22px}
+ .Scenario_Section{padding:12px}
+ .Scenario_Value{padding:8px 7px}
+ .Scenario_Value strong{font-size:18px}
+ .Scenario_Sliders{gap:10px}
+ .Scenario_Sources select{min-width:100%;width:100%}
+}

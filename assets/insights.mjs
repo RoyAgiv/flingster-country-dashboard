@@ -271,6 +271,7 @@ function Open_Country(Country_Code) {
   Drawer_Backdrop.hidden = false;
   document.body.classList.add("Insight_Drawer_Open");
   Render_Country();
+  window.dispatchEvent(new CustomEvent("countrypulse:country-open", { detail: { Code: Country_Code } }));
   document.getElementById("Insight_Close").focus();
 }
 
@@ -416,7 +417,7 @@ function Create_Interface() {
   document.addEventListener("keydown", (Event_Object) => {
     if (Event_Object.key === "Escape" && !Country_Drawer.hidden) Close_Country();
     if (Event_Object.key === "Tab" && !Country_Drawer.hidden) {
-      const Focusable = Array.from(Country_Drawer.querySelectorAll("button:not(:disabled),select:not(:disabled)"));
+      const Focusable = Array.from(Country_Drawer.querySelectorAll("button:not(:disabled),select:not(:disabled),input:not(:disabled),a[href]")).filter((Element) => !Element.hidden && Element.getClientRects().length > 0);
       const First = Focusable[0];
       const Last = Focusable.at(-1);
       if (Event_Object.shiftKey && document.activeElement === First) {
