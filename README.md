@@ -104,6 +104,32 @@ Flingster/DirtyRoulette's public feeds do **not** report verified live gender, c
 
 The collector still runs on the existing scheduled GitHub workflow. Gaps in the source are shown honestly—do not backfill missed half-hours by linear interpolation or infer missing users.
 
+## Reliable historical collection and richer country table
+
+### Automatic collection (independent of the browser)
+
+A live browser tab checks the provider every 60 seconds **for display only**. Historical readings are instead saved to `data/history.json` by the existing `collect-and-deploy.yml` GitHub Actions workflow.
+
+An audit on October 22, 2026 confirmed GitHub's best-effort cron schedule `7,37 * * * *` frequently omitted events, leaving only 15 saved readings across roughly 35 hours. We retain that cron as a fallback, but now also use the **always-on M4 Mac mini** as a small external half-hour trigger. Its macOS LaunchAgent `com.royagiv.countrypulse.dispatch` requests the existing GitHub `workflow_dispatch` at **:27 and :57 of each hour**, regardless of whether the dashboard is open. The M4 does **not** clone, rewrite, or deploy the CountryPulse repository, and no GitHub token is stored in the dispatch script. The normal workflow remains the sole authoritative collector and publisher.
+
+Files tracked for recovery: `ops/countrypulse-dispatch.sh` and `ops/com.royagiv.countrypulse.dispatch.plist`. Identical deployed copies on the M4 are located at:
+
+- `~/Library/Application Support/CountryPulse/dispatch-workflow.sh`
+- `~/Library/LaunchAgents/com.royagiv.countrypulse.dispatch.plist`
+- `~/Library/Logs/CountryPulse/dispatch-out.log` and `dispatch-error.log`
+
+Inspect the loaded service using `launchctl list com.royagiv.countrypulse.dispatch`. The agent runs as the logged-in M4 user and uses the existing `gh` authentication; the Mac must be powered on and logged in, and GitHub Actions runners must be available. The M4 power configuration was checked and reports `sleep 0` on AC power. If GitHub is down or the Mac is unreachable, collection can still be delayed. This is **not** a guarantee of exactly 48 successful snapshots every day.
+
+A duplicate guard prevents an additional dispatch within 20 minutes of a recent successful dispatch. Independently, the collector rejects repeated readings within 25 minutes or the same half-hour window. The workflow uses a non-canceling concurrency group and ordinary, non-force Git pushes. A manual M4 dispatch on October 22, 2026 successfully completed both capture and deployment jobs.
+
+### Country table columns
+
+The main table now includes **Δ users (~30m)**, **Δ %**, and **current representative local time** alongside the existing reported counts and world share. Each delta is compared only against a valid earlier snapshot of the *same pool* from **18 to 42 minutes** before the observation. A dash means no suitable baseline was collected (or the country is missing from it), **not zero change**. Cell tooltips show the actual elapsed minutes, previous count, and baseline timestamp. You can sort by biggest gains and drops.
+
+The local-time column uses an IANA timezone for a representative city (e.g. New York for the United States) and refreshes every minute while the page is visible. Countries with multiple time zones are handled in more detail inside the country popup. Local clocks are live but are **not** the timestamps of the reported activity numbers.
+
+The table CSV includes the delta, percentage, representative city and time, exact source observation timestamp, exact comparison timestamp, and elapsed minutes. A collection-health badge shows the last saved observation's age and gap; it warns when sampling is late. No missing samples are backfilled with fabricated values.
+
 ## Collection
 
 The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.

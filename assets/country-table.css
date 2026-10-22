@@ -1,0 +1,42 @@
+/* CountryPulse country table: fast comparison and representative local clocks. */
+.Table_Scroll table { min-width: 930px; }
+.Table_Scroll th { white-space: nowrap; }
+.Table_Scroll th:nth-child(n+3), .Table_Scroll td:nth-child(n+3) { text-align: right; }
+.Table_Scroll td.Table_Change, .Table_Scroll td.Table_Change_Pct {
+  font-size: 12px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  min-width: 79px;
+}
+.Table_Change[data-direction="up"],.Table_Change_Pct[data-direction="up"] { color: #8af0c0; }
+.Table_Change[data-direction="down"],.Table_Change_Pct[data-direction="down"] { color: #ffa9a6; }
+.Table_Change[data-direction="flat"],.Table_Change_Pct[data-direction="flat"] { color: #a8bfcb; }
+.Table_Change[data-direction="unknown"],.Table_Change_Pct[data-direction="unknown"] { color: #78929e; font-weight: 550; }
+.Table_Local_Time { min-width: 125px; white-space: nowrap; }
+.Table_Local_Time strong { display:block;font-size:12px;color:#cbe6e5;font-weight:750; }
+.Table_Local_Time small { display:block;color:#8daebb;font-size:10px;line-height:1.3;margin-top:2px; }
+.Table_Scroll td:nth-child(2) { min-width: 155px; }
+.Table_Scroll th[title] { cursor: help; }
+.Collection_Health {
+  display:inline-flex;
+  gap:6px;
+  align-items:center;
+  border:1px solid #446b6b;
+  color:#badbd8;
+  background:#193036;
+  font-size:11px;
+  border-radius:999px;
+  padding:4px 9px;
+  font-weight:650;
+}
+.Collection_Health[data-status="delayed"],
+.Collection_Health[data-status="late"] { color:#f5d6a2;background:#342f2d;border-color:#8b7147; }
+.Collection_Health[data-status="unknown"] { color:#b5c5cd;border-color:#667783; }
+.Table_Comparison_Head { white-space:nowrap; }
+@media(max-width:650px) {
+  .Table_Scroll { overflow-x:auto; }
+  .Table_Scroll table { min-width: 900px; }
+  .Table_Scroll th,.Table_Scroll td { padding:10px 9px; }
+  .Collection_Health { max-width:100%;white-space:normal; }
+}

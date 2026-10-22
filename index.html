@@ -77,6 +77,7 @@
   <link rel="stylesheet" href="./assets/network-explorer.css">
   <link rel="stylesheet" href="./assets/ux.css">
   <link rel="stylesheet" href="./assets/history-explorer.css">
+  <link rel="stylesheet" href="./assets/country-table.css">
 </head>
 <body>
   <main class="Shell">
@@ -179,23 +180,24 @@
         <div><h2>All countries</h2><p class="Subheading">Search, compare, and sort every reported location</p></div>
         <div class="Controls">
           <div class="Search_Wrap"><span class="Search_Icon" aria-hidden="true">⌕</span><input type="search" id="Search_Input" placeholder="Search country or code…" aria-label="Search countries" autocomplete="off"></div>
-          <select id="Sort_Select" aria-label="Sort countries"><option value="largest">Most online first</option><option value="smallest">Fewest online first</option><option value="name">Country A–Z</option></select>
+          <select id="Sort_Select" aria-label="Sort countries"><option value="largest">Most online first</option><option value="smallest">Fewest online first</option><option value="name">Country A–Z</option><option value="rising">Biggest gains (~30m)</option><option value="falling">Biggest drops (~30m)</option></select>
           <button id="Export_Button" class="Secondary_Button" type="button" disabled>Export CSV ↗</button>
         </div>
       </div>
       <div class="Table_Scroll">
         <table aria-label="Reported online counts for countries">
-          <thead><tr><th scope="col" style="width:64px">Rank</th><th scope="col">Country</th><th scope="col" style="text-align:right">Reported online</th><th scope="col" style="text-align:right">World share</th></tr></thead>
-          <tbody id="Country_Table"><tr><td colspan="4" class="Table_Empty">Loading countries…</td></tr></tbody>
+          <thead><tr><th scope="col" style="width:64px">Rank</th><th scope="col">Country</th><th scope="col" style="text-align:right">Reported online</th><th scope="col" id="Table_Comparison_Head" class="Table_Comparison_Head" title="Comparison against a reading 18–42 minutes earlier. Actual time gap is shown when available.">Δ users (~30m)</th><th scope="col" title="Reported percentage change from the same comparison, if a valid earlier reading exists">Δ %</th><th scope="col" style="text-align:right">World share</th><th scope="col" title="Current local clock for a representative city, not the timestamp of the user count">Local time</th></tr></thead>
+          <tbody id="Country_Table"><tr><td colspan="7" class="Table_Empty">Loading countries…</td></tr></tbody>
         </table>
       </div>
-      <div class="Bottom_Row"><span id="Results_Count">Waiting for data</span><span><label><input id="Auto_Refresh" type="checkbox" checked> Automatically refresh every 60 seconds</label></span></div>
+      <div class="Bottom_Row"><span id="Results_Count">Waiting for data</span><span id="Collection_Health" class="Collection_Health" role="status" aria-live="polite" title="Saved observations come from scheduled GitHub collection, not visits to this page">Checking collection…</span><span><label><input id="Auto_Refresh" type="checkbox" checked> Automatically refresh every 60 seconds</label></span></div>
     </section>
     <footer>CountryPulse is an independent viewer of publicly exposed, site-reported statistics. It is not affiliated with either website.</footer>
   </main>
   <iframe id="Data_Frame" class="Hidden_Frame" title="Country statistics source" aria-hidden="true" tabindex="-1" referrerpolicy="no-referrer"></iframe>
   <script type="module">
     import { Select_Latest_Saved_Reading, Age_Label, Retry_Delay_Seconds, Determine_Chart_State } from "./assets/reliability-utils.mjs";
+    import { Calculate_Thirty_Minute_Changes, Get_Representative_Country_Time, Compute_Collection_Health } from "./assets/country-table-metrics.mjs";
     const Source_Url = "https://rest.flingster.com/xhr.html?v=2&online=1&room=Adult&config=1&lang=en";
     const Source_Origin = "https://rest.flingster.com";
     const Number_Formatter = new Intl.NumberFormat("en-US");
@@ -363,11 +365,36 @@
       }
       Top_Chart.append(Fragment);
     }
+    function Render_Collection_Health(){
+      const Badge=document.getElementById("Collection_Health");
+      if(!Badge)return;
+      const Health=Compute_Collection_Health(Saved_History);
+      Badge.dataset.status=Health.Status;
+      Badge.textContent=Health.Last_Time ? "Saved "+Age_Label(Health.Last_Time)+
+        (Health.Gap_Minutes ? " · last gap "+Health.Gap_Minutes+"m" : "") :
+        "Saved collection not available";
+      Badge.title=Health.Last_Time ?
+        "Latest automated collection: "+new Date(Health.Last_Time*1000).toLocaleString()+
+        ". Scheduled around every 30 minutes. A gap means no saved reading, not zero users." :
+        "No saved historical snapshots are available.";
+    }
+    function Update_Table_Clocks(){
+      const Now_Ms=Date.now();
+      for(const Cell of Country_Table.querySelectorAll("td.Table_Local_Time[data-country-code]")){
+        const Clock=Get_Representative_Country_Time(Cell.dataset.countryCode,Now_Ms);
+        if(Clock){
+          Cell.querySelector("strong").textContent=Clock.Time;
+          Cell.querySelector("small").textContent=Clock.City;
+          Cell.title="Current local time in "+Clock.City+" ("+Clock.Zone+"). Counts reflect their separately labeled observation time.";
+        }
+      }
+    }
     function Render_Table(){
+      Render_Collection_Health();
       if(!Country_Rows.length){
         Country_Table.replaceChildren();
         const Row=document.createElement("tr");
-        const Cell=document.createElement("td");Cell.className="Table_Empty";Cell.colSpan=4;
+        const Cell=document.createElement("td");Cell.className="Table_Empty";Cell.colSpan=7;
         const Note=document.createElement("span");
         Note.textContent=Fetch_State==="error"?"Data unavailable — no saved snapshot for this pool.":"Waiting for a country reading…";
         Cell.append(Note);
@@ -382,7 +409,24 @@
       const Search_Query = Search_Input.value.trim().toLowerCase();
       const Filtered_Rows = Country_Rows.filter(Country_Row=>
         Country_Row.Name.toLowerCase().includes(Search_Query)||Country_Row.Code.toLowerCase().includes(Search_Query));
-      if(Sort_Select.value==="name")Filtered_Rows.sort((First,Second)=>First.Name.localeCompare(Second.Name));
+      const Observed_At=Math.floor((Updated_At?.getTime()||0)/1000);
+      const Comparison=Calculate_Thirty_Minute_Changes(Country_Rows,Saved_History,Selected_Room,Observed_At);
+      const Comparison_Header=document.getElementById("Table_Comparison_Head");
+      Comparison_Header.title=Comparison.Baseline ?
+        "Compared to "+new Date(Comparison.Baseline.t*1000).toLocaleString()+
+        " ("+Comparison.Elapsed_Minutes+" minutes earlier) · same "+Selected_Room+" pool" :
+        "No comparable saved observation 18–42 minutes before this reading.";
+      Country_Table.dataset.comparisonMinutes=Comparison.Elapsed_Minutes??"";
+      if(Sort_Select.value==="rising"&&Comparison.Baseline){
+        Filtered_Rows.sort((First,Second)=>
+          (Comparison.Changes.get(Second.Code)?.Difference??-1000000000)-
+          (Comparison.Changes.get(First.Code)?.Difference??-1000000000));
+      }else if(Sort_Select.value==="falling"&&Comparison.Baseline){
+        Filtered_Rows.sort((First,Second)=>
+          (Comparison.Changes.get(First.Code)?.Difference??1000000000)-
+          (Comparison.Changes.get(Second.Code)?.Difference??1000000000));
+      }
+      else if(Sort_Select.value==="name")Filtered_Rows.sort((First,Second)=>First.Name.localeCompare(Second.Name));
       else if(Sort_Select.value==="smallest")Filtered_Rows.sort((First,Second)=>First.Count-Second.Count);
       else Filtered_Rows.sort((First,Second)=>Second.Count-First.Count);
       Country_Table.textContent="";
@@ -402,14 +446,42 @@
         const Text = document.createElement("div");Text.append(Name,Code);Location.append(Flag,Text);Location_Cell.append(Location);
         Row.append(Location_Cell);
         const Count_Cell = Create_Cell("Table_Count",Format_Number(Country_Row.Count));Row.append(Count_Cell);
+        const Change=Comparison.Changes.get(Country_Row.Code);
+        const Direction=Change ? Change.Difference>0?"up":Change.Difference<0?"down":"flat" : "unknown";
+        const Sign=Change && Change.Difference>0?"+":"";
+        const Change_Cell=Create_Cell("Table_Change",Change?
+          Sign+Format_Number(Change.Difference):"—");
+        const Percent_Cell=Create_Cell("Table_Change_Pct",Change?.Percent!==null&&Change?.Percent!==undefined?
+          (Change.Percent>0?"+":"")+Change.Percent.toFixed(1)+"%":"—");
+        const Explanation=Comparison.Baseline ?
+          "Reported change over "+Comparison.Elapsed_Minutes+" minutes against "+
+          new Date(Comparison.Baseline.t*1000).toLocaleString()+
+          " in "+Selected_Room+". Earlier count: "+(Change?Format_Number(Change.Before):"not reported") :
+          "No saved reading 18–42 minutes earlier. This does not mean zero change.";
+        Change_Cell.title=Explanation;
+        Percent_Cell.title=Explanation;
+        Change_Cell.dataset.direction=Direction;
+        Percent_Cell.dataset.direction=Direction;
+        Row.append(Change_Cell,Percent_Cell);
         const Share_Cell = document.createElement("td");
         const Meter = document.createElement("span");Meter.className="Mini_Progress";
         const Bar = document.createElement("i");Bar.style.width=(Online_Total?Math.min(100,Country_Row.Count/Online_Total*100):0)+"%";Meter.append(Bar);
         Share_Cell.append(Meter,document.createTextNode(Format_Percent(Online_Total?Country_Row.Count/Online_Total*100:0)));
-        Row.append(Share_Cell);Fragment.append(Row);
+        const Clock_Cell=Create_Cell("Table_Local_Time","");
+        Clock_Cell.dataset.countryCode=Country_Row.Code;
+        const Clock=Get_Representative_Country_Time(Country_Row.Code);
+        const Clock_Time=document.createElement("strong");
+        Clock_Time.textContent=Clock?.Time||"—";
+        const Clock_City=document.createElement("small");
+        Clock_City.textContent=Clock?.City||"Timezone unavailable";
+        Clock_Cell.title=Clock?
+          "Current local time in "+Clock.City+" ("+Clock.Zone+"). This is a live clock, not the source count timestamp.":
+          "Representative time zone unavailable";
+        Clock_Cell.append(Clock_Time,Clock_City);
+        Row.append(Share_Cell,Clock_Cell);Fragment.append(Row);
       }
       if(!Filtered_Rows.length){
-        const Row=document.createElement("tr");const Cell=Create_Cell("Table_Empty","No countries match your search.");Cell.colSpan=4;Row.append(Cell);Fragment.append(Row);
+        const Row=document.createElement("tr");const Cell=Create_Cell("Table_Empty","No countries match your search.");Cell.colSpan=7;Row.append(Cell);Fragment.append(Row);
       }
       Country_Table.append(Fragment);
       document.getElementById("Results_Count").textContent="Showing "+Format_Number(Filtered_Rows.length)+" of "+Format_Number(Country_Rows.length)+" countries and territories";
@@ -481,9 +553,23 @@
     }
     function Export_Csv(){
       if(!Country_Rows.length)return;
-      const Csv_Rows=[["Rank","Country","Country code","Reported online","World share"],...Country_Rows.map(Country_Row=>[
-        Country_Row.Rank,Country_Row.Name,Country_Row.Code,Country_Row.Count,(Country_Row.Count/Online_Total*100).toFixed(2)+"%"
-      ])];
+      const Observed_At=Math.floor((Updated_At?.getTime()||0)/1000);
+      const Comparison=Calculate_Thirty_Minute_Changes(Country_Rows,Saved_History,Selected_Room,Observed_At);
+      const Export_Time=Date.now();
+      const Csv_Rows=[["Rank","Country","Country code","Reported online","Change (~30m)","Change percent (~30m)","World share","Local clock at export","Representative city","Observation UTC","Baseline UTC","Elapsed minutes"],...Country_Rows.map(Country_Row=>{
+        const Change=Comparison.Changes.get(Country_Row.Code);
+        const Clock=Get_Representative_Country_Time(Country_Row.Code,Export_Time);
+        return [
+          Country_Row.Rank,Country_Row.Name,Country_Row.Code,Country_Row.Count,
+          Change?Change.Difference:"",
+          Change?.Percent!==null&&Change?.Percent!==undefined?Change.Percent.toFixed(1)+"%":"",
+          (Country_Row.Count/Online_Total*100).toFixed(2)+"%",
+          Clock?.Time||"",Clock?.City||"",
+          Updated_At?.toISOString()||"",
+          Comparison.Baseline?new Date(Comparison.Baseline.t*1000).toISOString():"",
+          Comparison.Elapsed_Minutes??""
+        ];
+      })];
       const Csv_Text=Csv_Rows.map(Fields=>Fields.map(Field=>'"'+String(Field).replaceAll('"','""')+'"').join(",")).join("\r\n");
       const Csv_Blob=new Blob([Csv_Text],{type:"text/csv;charset=utf-8"});
       const Download_Url=URL.createObjectURL(Csv_Blob);
@@ -541,7 +627,14 @@
       const History=Event.detail?.Historical_Snapshots||[];
       Saved_History=Array.isArray(History)?History:[];
       if(Data_Mode!=="live")Apply_Saved_For_Room();
-      if(Country_Rows.length)Render_Observation_UI();
+      if(Country_Rows.length){Render_Table();Render_Observation_UI();}
+      else Render_Collection_Health();
+    });
+    setInterval(()=>{
+      if(!document.hidden){Update_Table_Clocks();Render_Collection_Health();}
+    },60000);
+    document.addEventListener("visibilitychange",()=>{
+      if(!document.hidden){Update_Table_Clocks();Render_Collection_Health();}
     });
     Read_Browser_Cache();
     Apply_Saved_For_Room();
