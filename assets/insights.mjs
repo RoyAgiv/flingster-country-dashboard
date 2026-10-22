@@ -1,5 +1,8 @@
 import { Aggregate_Hourly, Compare_Day_Over_Day, Calculate_Observed_Peak } from "./insights-utils.mjs";
 import { Get_Pool_Snapshots, Get_Pool_Reading, Calculate_Weekend_Average } from "./trends-utils.mjs";
+import { Get_Country_Time_Zones } from "./country-timezones.mjs";
+import { Build_Hourly_Experience } from "./history-analytics.mjs";
+import { Render_Country_Clocks, Refresh_Country_Clocks, Render_Interactive_History, Render_Interactive_Hours } from "./history-explorer.mjs";
 
 const Format_Number = new Intl.NumberFormat("en-US");
 const Browser_Timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -17,7 +20,9 @@ let Current_Total = 0;
 let Selected_Country_Code = null;
 let Last_Selected_Focus = null;
 let Selected_Period = 7;
-let Selected_Timezone = "local";
+let Selected_Timezone = "country";
+let Selected_Country_Zone = null;
+let Selected_Day_Filter = "all";
 let History_Ready = false;
 let Favorite_Country_Codes = [];
 
@@ -104,107 +109,50 @@ function Date_Short(Timestamp) {
   return new Date(Timestamp * 1000).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+function Selected_Chart_Zone() {
+  if(Selected_Timezone==="utc")return "UTC";
+  if(Selected_Timezone==="local")return Browser_Timezone;
+  return Selected_Country_Zone || Browser_Timezone;
+}
+
 function Render_Trend(Samples) {
   const Container = document.getElementById("Insight_Trend");
   const Label = document.getElementById("Insight_Trend_Labels");
-  Container.replaceChildren();
-  Label.replaceChildren();
-  Container.classList.toggle("Single", Samples.length < 2);
-  if (Samples.length === 1) {
-    const First_Reading = document.createElement("div");
-    First_Reading.className = "Insight_Empty";
-    First_Reading.textContent = "First saved reading: " +
-      Format_Number.format(Samples[0].Count) +
-      ". Activity trend appears after another reading.";
-    Container.append(First_Reading);
-    return;
-  }
-  if (!Samples.length) {
-    const Empty = document.createElement("div");
-    Empty.className = "Insight_Empty";
-    Empty.textContent = "No snapshots yet for this period. Your history will build automatically.";
-    Container.append(Empty);
-    return;
-  }
-  const Width = 520;
-  const Height = 150;
-  const Padding = 9;
-  const Min_Time = Samples[0].t;
-  const Max_Time = Math.max(Min_Time + 1, Samples.at(-1).t);
-  const Max_Count = Math.max(1, ...Samples.map((Sample) => Sample.Count));
-  const Format_X = (Sample) => Padding + ((Sample.t - Min_Time) / (Max_Time - Min_Time)) * (Width - Padding * 2);
-  const Format_Y = (Sample) => Height - Padding - (Sample.Count / Max_Count) * (Height - Padding * 2);
-  const Points = Samples.map((Sample) => [Format_X(Sample), Format_Y(Sample)]);
-  const Path_Points = Points.map(([X, Y], Index) => (Index ? "L" : "M") + X.toFixed(2) + " " + Y.toFixed(2)).join(" ");
-  const Create_Svg = (Name, Attributes = {}) => {
-    const Element = document.createElementNS("http://www.w3.org/2000/svg", Name);
-    for (const [Attribute, Value] of Object.entries(Attributes)) Element.setAttribute(Attribute, String(Value));
-    return Element;
-  };
-  const Svg = Create_Svg("svg", { viewBox: "0 0 " + Width + " " + Height, class: "Insight_Trend_Svg", role: "img", "aria-label": "Recorded counts over the selected period" });
-  for (const Proportion of [0.25, 0.5, 0.75]) {
-    const Y = Height * Proportion;
-    Svg.append(Create_Svg("line", { x1: 0, x2: Width, y1: Y, y2: Y, class: "Grid_Line" }));
-  }
-  const Bottom_Y = Height - Padding;
-  Svg.append(Create_Svg("path", { d: Path_Points + " L" + Points.at(-1)[0].toFixed(2) + " " + Bottom_Y + " L" + Points[0][0].toFixed(2) + " " + Bottom_Y + " Z", class: "Area" }));
-  Svg.append(Create_Svg("path", { d: Path_Points, class: "Stroke" }));
-  Svg.append(Create_Svg("circle", { cx: Points.at(-1)[0], cy: Points.at(-1)[1], r: 5, class: "Last_Dot" }));
-  Container.append(Svg);
-  const First_Label = document.createElement("span");
-  const Last_Label = document.createElement("span");
-  First_Label.textContent = Date_Short(Samples[0].t);
-  Last_Label.textContent = Date_Short(Samples.at(-1).t);
-  Label.append(First_Label, Last_Label);
+  // Preserve the isolated-sample warning; a single point is never a trend.
+  if(Samples.length === 1) Container.classList.add("Single");
+  else Container.classList.remove("Single");
+  Render_Interactive_History({
+    Container,Labels:Label,Samples,Country_Code:Selected_Country_Code,
+    Pool:Selected_Pool,Zone:Selected_Chart_Zone(),Days:Selected_Period,
+  });
 }
 
 function Render_Hours(Insight) {
   const Peaks = document.getElementById("Insight_Peaks");
   const Grid = document.getElementById("Insight_Hours");
-  Peaks.replaceChildren();
-  Grid.replaceChildren();
-  const Qualified = Insight.Peak_Hours;
-  Grid.classList.toggle("Insufficient", Qualified.length === 0);
-  if (!Qualified.length) {
-    const Empty = document.createElement("div");
-    Empty.className = "Insight_Empty_Hours";
-    Empty.textContent = "Best hours will appear after there are readings on multiple days.";
-    Peaks.append(Empty);
-    return;
-  } else {
-    for (const Bin of Qualified) {
-      const Card = document.createElement("div");
-      Card.className = "Insight_Peak";
-      const Time = document.createElement("b");
-      Time.textContent = Format_Range_Time(Bin.Hour);
-      const Detail = document.createElement("span");
-      Detail.textContent = "Avg " + Format_Number.format(Bin.Average) + " · " + Bin.Distinct_Days + " days";
-      Card.append(Time, Detail);
-      Peaks.append(Card);
-    }
-  }
-  const Max_Average = Math.max(1, ...Insight.Hourly.filter((Bin) => Bin.Average !== null).map((Bin) => Bin.Average));
-  const Strong_Hours = new Set(Qualified.map((Bin) => Bin.Hour));
-  for (const Hour_Entry of Insight.Hourly) {
-    const Column = document.createElement("div");
-    Column.className = "Insight_Hour_Column";
-    const Bar = document.createElement("div");
-    Bar.className = "Insight_Hour_Bar";
-    if (Hour_Entry.Average === null) Bar.classList.add("Empty");
-    if (Strong_Hours.has(Hour_Entry.Hour)) Bar.classList.add("Highlight");
-    Bar.style.height = (Hour_Entry.Average === null ? 5 : Math.max(6, (Hour_Entry.Average / Max_Average) * 79)) + "px";
-    Bar.title = Format_Range_Time(Hour_Entry.Hour) + ": " + (Hour_Entry.Average === null ? "no samples" : ("average " + Format_Number.format(Hour_Entry.Average) + ", " + Hour_Entry.Sample_Count + " readings"));
-    const Label = document.createElement("label");
-    Label.textContent = Hour_Entry.Hour % 3 === 0 ? String(Hour_Entry.Hour).padStart(2, "0") : "";
-    Column.append(Bar, Label);
-    Grid.append(Column);
+  const Zone = Selected_Chart_Zone();
+  const View = Build_Hourly_Experience(Insight.Samples,Zone,Selected_Day_Filter);
+  Grid.classList.toggle("Insufficient",View?.Confidence==="limited");
+  const Result=Render_Interactive_Hours({
+    Peaks,Grid,Samples:Insight.Samples,Zone,Day_Filter:Selected_Day_Filter,
+    Country_Code:Selected_Country_Code,
+  });
+  if(Result){
+    Set_Text("Insight_Quality",Result.Confidence==="good"?
+      "Strongest available estimate from "+Result.Sample_Count+" readings on "+
+      Result.Coverage_Days+" days. Still provider-reported, not verified people." :
+      Result.Confidence==="emerging"?
+      "Early repeat pattern from "+Result.Sample_Count+" readings across "+
+      Result.Coverage_Days+" days. Treat recommendations as preliminary." :
+      "Only "+Result.Sample_Count+" readings on "+Result.Coverage_Days+
+      " days · "+Result.Coverage_Hours+"/24 hourly windows covered. No reliable peak-time claim yet.");
   }
 }
-
 function Render_Country() {
   if (!Selected_Country_Code) return;
   const Country = Current_Countries.find((Item) => Item.Code === Selected_Country_Code);
-  const Timezone = Selected_Timezone === "utc" ? "UTC" : Browser_Timezone;
+  const Timezone = Selected_Chart_Zone();
+  window.CountryPulse_Insight_Zone=Timezone;
   const Pool_Snapshots = Get_Pool_Snapshots(Historical_Snapshots, Selected_Pool);
   const Insight = Aggregate_Hourly(Pool_Snapshots, Selected_Country_Code, Timezone, Selected_Period);
   const Percentage = Country && Current_Total ? (Country.Count / Current_Total * 100).toFixed(2) + "% of worldwide feed" : "No current reading";
@@ -220,22 +168,37 @@ function Render_Country() {
     String(Country && Country.Count >= (Insight.Maximum_Count ?? 0));
   const Peak_Foot = document.getElementById("Insight_Peak").closest(".Insight_Stat")
     .querySelector(".Insight_Stat_Foot");
-  Peak_Foot.textContent = "Saved history + latest live reading";
+  Peak_Foot.textContent = "Saved history + latest "+(
+    window.CountryPulse_Data?.Observation_Mode==="live"?"live":"reported")+" observation";
   Set_Text("Insight_Chart_Subtitle", Insight.Sample_Count + " saved readings · " + Insight.Observation_Days + " days observed");
-  Set_Text("Insight_Hours_Label", Selected_Timezone === "utc" ? "UTC" : "Your time · " + Browser_Timezone.replaceAll("_", " "));
+  Set_Text("Insight_Hours_Label",
+    (Selected_Timezone==="country"?"Country local":
+      Selected_Timezone==="local"?"Your local":"UTC")+" · "+Timezone.replaceAll("_"," "));
   const Day_Change = Compare_Day_Over_Day(Insight.Samples.map((Sample) => ({ t: Sample.t, c: { [Selected_Country_Code]: Sample.Count } })), Selected_Country_Code);
   Set_Text("Insight_Day_Change", Day_Change === null ? "More history needed" : ((Day_Change > 0 ? "+" : "") + Day_Change + "% vs same time yesterday"));
-  Set_Text("Insight_Quality", Insight.Observation_Days < 2 ?
-    "Early readings. Best hours need at least two days of observations." :
-    (Insight.Reliable_Enough ? "Average based on sampled hours; readings are site-reported, not verified people." :
-    "Preliminary pattern. Several days of readings improve reliability."));
+
   const Coverage_Target = Selected_Period * 48;
   const Coverage = Math.min(100, Math.round(Insight.Sample_Count / Coverage_Target * 1000) / 10);
   const Coverage_Bar = document.getElementById("Insight_Coverage_Bar");
   Coverage_Bar.style.width = Coverage + "%";
   Set_Text("Insight_Coverage", Coverage + "% coverage of selected period · " + Insight.Sample_Count + " readings");
+  const Clock_Container=document.getElementById("Insight_Clocks");
+  if(Clock_Container){
+    Render_Country_Clocks(Clock_Container,Selected_Country_Code,
+      Selected_Country_Zone,(Next_Zone)=>{
+        if(Next_Zone!==Selected_Country_Zone){
+          Selected_Country_Zone=Next_Zone;
+          Selected_Timezone="country";
+          document.getElementById("Insight_Timezone").value="country";
+          Render_Country();
+        }
+      });
+  }
   Render_Trend(Insight.Samples);
   Render_Hours(Insight);
+  window.dispatchEvent(new CustomEvent("countrypulse:insight-render",{
+    detail:{Zone:Timezone,Country_Code:Selected_Country_Code,Day_Filter:Selected_Day_Filter},
+  }));
   const Weekend_Data = Calculate_Weekend_Average(Historical_Snapshots, Selected_Country_Code, Selected_Pool);
   Set_Text("Insight_Weekend", Weekend_Data ?
     "Weekdays avg " + Format_Number.format(Weekend_Data.Weekday) +
@@ -266,8 +229,12 @@ function Render_Country() {
 function Open_Country(Country_Code) {
   if (!/^[A-Z]{2}$/.test(Country_Code)) return;
   Last_Selected_Focus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if(Selected_Country_Code!==Country_Code){
+    Selected_Country_Zone=Get_Country_Time_Zones(Country_Code)[0]?.Zone||null;
+  }
   Selected_Country_Code = Country_Code;
   Country_Drawer.hidden = false;
+  Country_Drawer.scrollTop = 0;
   Drawer_Backdrop.hidden = false;
   document.body.classList.add("Insight_Drawer_Open");
   Render_Country();
@@ -387,12 +354,26 @@ function Create_Interface() {
       '<div class="Insight_Top"><div class="Insight_Eyebrow">COUNTRY ACTIVITY · HISTORY</div><button type="button" class="Insight_Icon_Button" id="Insight_Close" aria-label="Close country insights">×</button></div>' +
       '<div class="Insight_Title_Row"><span class="Insight_Country_Flag" id="Insight_Flag"></span><div style="flex:1;min-width:0"><h2 class="Insight_Country_Name" id="Insight_Name"></h2><div class="Insight_Country_Code" id="Insight_Code"></div></div><button class="Insight_Icon_Button Insight_Star" id="Insight_Star" type="button" aria-label="Pin country">☆</button></div>' +
       '<p class="Insight_Lead">When is this country most active in the reported feed?</p>' +
-      '<div class="Insight_Controls"><select id="Insight_Period" aria-label="Historical period"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select><select id="Insight_Timezone" aria-label="Timezone for best hours"><option value="local" selected>Hours in my timezone</option><option value="utc">Hours in UTC</option></select></div>' +
+      '<div class="Insight_Controls"><select id="Insight_Period" aria-label="Historical period"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select><select id="Insight_Timezone" aria-label="Timezone for country activity"><option value="country" selected>Country local time</option><option value="local">My timezone</option><option value="utc">UTC</option></select></div>' +
       '<div class="Insight_Stats"><div class="Insight_Stat"><div class="Insight_Stat_Label">Reported now</div><div class="Insight_Stat_Value Glow" id="Insight_Now">—</div><div class="Insight_Stat_Foot">Live feed</div></div><div class="Insight_Stat"><div class="Insight_Stat_Label">Recorded average</div><div class="Insight_Stat_Value" id="Insight_Average">—</div><div class="Insight_Stat_Foot">Selected period</div></div><div class="Insight_Stat"><div class="Insight_Stat_Label">Highest observed</div><div class="Insight_Stat_Value" id="Insight_Peak">—</div><div class="Insight_Stat_Foot">Selected period</div></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>Activity over time</h3><span class="Insight_Mini_Label" id="Insight_Chart_Subtitle"></span></div><div class="Insight_Trend_Container" id="Insight_Trend"></div><div class="Insight_Trend_Labels" id="Insight_Trend_Labels"></div><div class="Insight_Disclaimer"><span aria-hidden="true">↗</span><span id="Insight_Day_Change"></span></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>Best hours on average</h3><span class="Insight_Mini_Label" id="Insight_Hours_Label"></span></div><div class="Insight_Peak_Cards" id="Insight_Peaks"></div><div class="Insight_Hour_Grid" id="Insight_Hours"></div><div class="Insight_Disclaimer"><span aria-hidden="true">ⓘ</span><span id="Insight_Quality"></span></div></div>' +
       '<div class="Insight_Section"><div class="Insight_Section_Head"><h3>History coverage</h3><span class="Insight_Mini_Label">Goal: ~2 readings/hour</span></div><div class="Insight_Mini_Label" id="Insight_Coverage"></div><div class="Insight_Sample_Progress"><span id="Insight_Coverage_Bar"></span></div><div class="Insight_Disclaimer">Stored automatically about every 30 minutes, subject to GitHub scheduling delays. 45-day rolling storage. Averages reflect unverified site-reported counts.</div></div>' +
     '</div>';
+  const Clock_Container=document.createElement("div");
+  Clock_Container.id="Insight_Clocks";
+  Clock_Container.className="Insight_Clocks";
+  Country_Drawer.querySelector(".Insight_Title_Row").after(Clock_Container);
+
+  const Hour_Filter=document.createElement("select");
+  Hour_Filter.id="Insight_Day_Filter";
+  Hour_Filter.className="Insight_Day_Filter";
+  Hour_Filter.setAttribute("aria-label","Filter hourly pattern by day type");
+  for(const [Value,Label] of [["all","All days"],["weekday","Weekdays"],["weekend","Weekends"]]){
+    const Option=document.createElement("option");
+    Option.value=Value;Option.textContent=Label;Hour_Filter.append(Option);
+  }
+  Country_Drawer.querySelector("#Insight_Hours_Label").after(Hour_Filter);
   const Comparison_Block = document.createElement("div");
   Comparison_Block.className = "Insight_Pool_Compare";
   Comparison_Block.id = "Insight_Pool_Compare";
@@ -417,6 +398,11 @@ function Create_Interface() {
     Selected_Timezone = Event_Object.target.value;
     Render_Country();
   });
+  Hour_Filter.addEventListener("change",()=>{
+    Selected_Day_Filter=Hour_Filter.value;
+    Render_Country();
+  });
+  setInterval(()=>{if(!Country_Drawer.hidden)Refresh_Country_Clocks(Clock_Container);},30000);
   document.addEventListener("keydown", (Event_Object) => {
     if (Event_Object.key === "Escape" && !Country_Drawer.hidden) Close_Country();
     if (Event_Object.key === "Tab" && !Country_Drawer.hidden) {

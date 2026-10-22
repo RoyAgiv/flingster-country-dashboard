@@ -1,5 +1,6 @@
 import { Compare_Countries, Age_Label } from "./reliability-utils.mjs";
 import { Aggregate_Hourly } from "./insights-utils.mjs";
+import { Build_Hourly_Experience } from "./history-analytics.mjs";
 import { Get_Pool_Snapshots } from "./trends-utils.mjs";
 
 const View_Key = "countrypulse-view-v1";
@@ -348,15 +349,18 @@ function Add_Planner() {
     if(!Active_Country_Code)return;
     const Pool=window.CountryPulse_Data?.Room || "Adult";
     const Duration=Number(document.getElementById("Insight_Period").value)||7;
-    const Timezone=document.getElementById("Insight_Timezone").value==="utc"?"UTC":
+    const Timezone=window.CountryPulse_Insight_Zone||
       Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
     const Data=Aggregate_Hourly(Get_Pool_Snapshots(Saved_History,Pool),Active_Country_Code,Timezone,Duration);
-    if(!Data.Reliable_Enough||!Data.Peak_Hours.length){
-      Suggestion.textContent="Best-time planner: gathering data · "+Data.Sample_Count+
-        " readings on "+Data.Observation_Days+" days. Wait for wider hourly coverage.";
+    const Day_Filter=document.getElementById("Insight_Day_Filter")?.value||"all";
+    const Hourly=Build_Hourly_Experience(Data.Samples,Timezone,Day_Filter);
+    if(!Hourly?.Best_Hours.length){
+      Suggestion.textContent="Best-time planner: gathering data · "+(Hourly?.Sample_Count??0)+
+        " readings on "+(Hourly?.Coverage_Days??0)+" days, "+(Hourly?.Coverage_Hours??0)+
+        "/24 hours sampled. No reliable recommendation yet.";
       return;
     }
-    const Best=Data.Peak_Hours[0];
+    const Best=Hourly.Best_Hours[0];
     Suggestion.textContent="Suggested hour: "+String(Best.Hour).padStart(2,"0")+":00–"+
       String((Best.Hour+1)%24).padStart(2,"0")+":00 ("+Timezone+") · "+
       Best.Sample_Count+" samples across "+Best.Distinct_Days+" days · preliminary";
@@ -365,6 +369,7 @@ function Add_Planner() {
     Active_Country_Code=Event_Object.detail?.Code||Active_Country_Code;
     Update();
   });
+  window.addEventListener("countrypulse:insight-render",Update);
   window.addEventListener("countrypulse:history",Update);
   for(const Id of ["Insight_Period","Insight_Timezone"]){
     document.getElementById(Id)?.addEventListener("change",Update);

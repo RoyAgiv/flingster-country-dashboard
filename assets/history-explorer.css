@@ -1,0 +1,103 @@
+/* CountryPulse richer country insights — accessible, data-first */
+.Insight_Clocks{display:flex;gap:8px;align-items:stretch;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#375a67 transparent;padding:3px 1px 12px;margin-top:10px}
+.Clock_Header{font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:850;color:#9bc6ca;min-width:61px;align-self:center}
+.Clock_Chip{background:#122d3b;border:1px solid #335260;border-radius:10px;color:#dff5f2;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:3px;min-width:106px;padding:9px 11px;text-align:left;flex:none;transition:border-color .16s,background .16s}
+.Clock_Chip:hover,.Clock_Chip:focus-visible{border-color:#65cfc0;background:#1a3b46;outline:none}
+.Clock_Chip[data-selected="true"]{border-color:#65cfbf;background:#15413e;box-shadow:inset 0 0 0 1px rgba(93,224,208,.17)}
+.Clock_City{font-size:10px;font-weight:800;color:#a5cdd0;white-space:nowrap}
+.Clock_Time{font-size:18px;letter-spacing:-.55px;font-weight:850;line-height:1.1;white-space:nowrap}
+.Clock_Day{font-size:10px;color:#a6c1cb}
+.Clock_Fallback{font-size:12px;color:#92b2be}
+.Insight_Detail_Grid{display:grid;grid-template-columns:1fr;gap:14px}
+.Insight_Detail_Grid>.Insight_Section{min-width:0;margin:0}
+.Insight_Detail_Grid>.Insight_Section:first-child{padding:18px 20px}
+.Insight_Detail_Grid>.Insight_Section:first-child .Insight_Trend_Container{min-height:250px;height:auto;display:block}
+.History_Chart_Stage{position:relative;width:100%;min-height:245px;overflow:visible}
+.History_Interactive_Svg{display:block;width:100%;height:auto;min-height:190px;cursor:crosshair;outline:none;touch-action:pan-y}
+.History_Interactive_Svg:focus-visible{outline:2px solid #84f0dd;outline-offset:-3px;border-radius:7px}
+.History_Grid_Line{stroke:#304d5e;stroke-width:1;stroke-dasharray:3 5}
+.History_Line{stroke:#6eebd8;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.History_Missing_Gap{stroke:#d4c185;stroke-width:1.8;stroke-dasharray:5 6;opacity:.67}
+.History_Axis_Text{fill:#a1bdca;font:12px system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
+.History_Crosshair{stroke:#c0fff0;stroke-width:1.3;stroke-dasharray:3 4;opacity:.7;pointer-events:none}
+.History_Focus_Dot{fill:#d1fff2;stroke:#236f70;stroke-width:3.5;pointer-events:none}
+.History_Tooltip{position:absolute;z-index:3;min-width:190px;max-width:250px;transform:translateX(-50%);border-radius:11px;border:1px solid #5b9c94;background:rgba(8,28,40,.97);padding:10px 12px;box-shadow:0 12px 30px rgba(0,0,0,.42);pointer-events:none;color:#d9f6f1;display:grid;gap:3px;font-variant-numeric:tabular-nums}
+.History_Tooltip[hidden]{display:none}
+.History_Tooltip b{font-size:16px;color:#8affdf;line-height:1.2}
+.History_Tooltip span{font-size:11px;color:#c3dfe5}
+.History_Tooltip small{font-size:11px;color:#a9cac9}
+.History_Summary_Metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0 10px}
+.History_Mini_Metric{background:#172d3a;border:1px solid #325264;border-radius:10px;padding:10px 12px;display:grid;gap:3px;min-width:0}
+.History_Mini_Metric span{font-size:11px;color:#a1bdc8}
+.History_Mini_Metric strong{font-size:18px;color:#e7faf7;line-height:1.2;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.History_Mini_Metric small{font-size:10px;color:#90b5c0}
+.History_Axis_Caption{font-size:11px;color:#9fbdc4;line-height:1.4}
+.History_Focus_Row{color:#c1eee6;font-size:12px;background:#12323c;border:1px solid #2b6667;padding:10px 12px;border-radius:9px;line-height:1.55}
+.History_Gap_Note{font-size:10px;color:#9fb6bc;grid-column:1/-1}
+.History_Empty{color:#a7c4cd;border:1px dashed #3e5b6c;border-radius:11px;min-height:135px;display:flex;align-items:center;justify-content:center;padding:16px;font-size:12px;text-align:center}
+.History_Readings_Details{margin-top:12px;border:1px solid #345465;border-radius:10px;background:#112331}
+.History_Readings_Details>summary{padding:10px 13px;font-weight:750;color:#c7e7e5;font-size:12px;cursor:pointer}
+.History_Readings_Actions{display:flex;gap:8px;align-items:center;justify-content:flex-start;flex-wrap:wrap;padding:2px 12px 12px}
+.History_Readings_List{max-height:290px;overflow-y:auto;border-top:1px solid #355263;scrollbar-width:thin}
+.History_Reading_Row{display:grid;grid-template-columns:1.5fr 1fr 1fr;align-items:center;gap:7px;width:100%;background:transparent;border:0;border-bottom:1px solid #284353;color:#bad5df;padding:8px 12px;text-align:left;font-size:11px;font-variant-numeric:tabular-nums}
+.History_Reading_Row:hover,.History_Reading_Row:focus-visible{background:#1f4051;outline:1px solid #67c8be}
+.History_Reading_Row strong{color:#e1f4f2;font-size:12px}
+.History_Reading_Row small{font-size:11px;color:#9abbc1;text-align:right}
+.Hour_Status{font-size:12px;color:#9fdfd6;margin:2px 0 10px;font-weight:750}
+.Hour_Peak_Cards{display:flex;gap:9px;flex-wrap:wrap;margin:4px 0 12px}
+.Hour_Peak_Card{display:grid;gap:2px;flex:1;min-width:150px;border:1px solid #4c857a;border-radius:10px;padding:11px 12px;background:#183b3c;color:#d5f4eb;text-align:left}
+.Hour_Peak_Card strong{font-size:15px;color:#9ff9e9}
+.Hour_Peak_Card span{font-size:12px}
+.Hour_Peak_Card small{font-size:10px;color:#a6c9c4}
+.Hour_Preview_Note{color:#a6c8ce;font-size:11.5px;margin:6px 0 12px;line-height:1.5}
+#Insight_Hours{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:4px;min-height:130px;align-items:end}
+#Insight_Hours.Insufficient{display:grid;min-height:130px}
+#Insight_Hours .Insight_Hour_Column{min-width:0;min-height:119px;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 5px;color:#9cbac6;cursor:pointer}
+#Insight_Hours .Insight_Hour_Column:focus-visible{outline:1px solid #a4fce9;outline-offset:1px}
+#Insight_Hours .Insight_Hour_Column[data-selected="true"]{background:#183a41;border-bottom-color:#7de7d0}
+#Insight_Hours .Insight_Hour_Column[data-now="true"]:not([data-selected="true"]){background:#183744}
+#Insight_Hours .Insight_Hour_Bar{width:100%;max-width:21px;min-height:5px;border-radius:4px 4px 1px 1px;background:linear-gradient(0deg,#398e97,#63d4c1);opacity:.88}
+#Insight_Hours .Insight_Hour_Bar.Early{background:linear-gradient(0deg,#5b6e81,#86acae)}
+#Insight_Hours .Insight_Hour_Bar.Empty{background:#345261;opacity:.4}
+#Insight_Hours .Insight_Hour_Bar.Highlight{background:linear-gradient(0deg,#3aa791,#b0ffde);opacity:1}
+#Insight_Hours .Insight_Hour_Column small{font-size:10px;min-height:13px;padding-top:3px;color:#b4cbd1;white-space:nowrap}
+.Hour_Inspector{font-size:12px;color:#c4e9e2;background:#16333c;border:1px solid #315e61;border-radius:9px;padding:10px 12px;margin:11px 0 2px;line-height:1.5;font-variant-numeric:tabular-nums}
+.Insight_Day_Filter{font-size:12px!important;min-height:33px!important;max-width:170px}
+.Insight_Section_Head{flex-wrap:wrap}
+.Insight_Hours_Legend{font-size:11px;color:#a0bdc5;display:flex;gap:10px;flex-wrap:wrap;margin-top:11px}
+.Scenario_Disclosure{margin:12px 0;border:1px solid #345361;border-radius:12px;background:#112431}
+.Scenario_Disclosure>summary{font-size:13px;font-weight:820;color:#cde7e5;padding:13px 17px;cursor:pointer}
+.Scenario_Disclosure .Scenario_Section{border:0;border-top:1px solid #345361;background:transparent;margin:0;border-radius:0}
+.Scenario_Source_Quality{font-size:11px;color:#b8dbc9;background:#1b3a39;padding:5px 9px;border:1px solid #3c7972;border-radius:7px;display:inline-block}
+.Scenario_Source_Quality[data-trust="low"]{color:#e9c8a2;border-color:#7e6950;background:#382f32}
+.Scenario_Source_Quality[data-trust="none"]{color:#b3c2cb;border-color:#4e6475;background:#283544}
+.Scenario_Section[data-scenario="official"] .Scenario_Bar{opacity:.15}
+.Scenario_Section[data-scenario="official"] .Scenario_Values strong{color:#a8b9c4}
+.Scenario_Section[data-scenario="official"] .Scenario_Sliders{opacity:.42}
+.Pool_Compare_Disclosure{margin:10px 0;border:1px solid #294855;border-radius:10px;background:#102532}
+.Pool_Compare_Disclosure>summary{padding:10px 14px;font-size:12px;color:#b8d9dc;font-weight:800;cursor:pointer}
+.Pool_Compare_Disclosure>.Insight_Pool_Compare{margin:10px 12px}
+.Pool_Compare_Disclosure>.Insight_Pool_Time,.Pool_Compare_Disclosure>.Pool_Share_Line{margin:8px 12px;color:#a7c3ce}
+@media(max-width:760px){
+ .Insight_Detail_Grid>.Insight_Section:first-child{padding:13px 11px}
+ .History_Chart_Stage{min-height:185px}
+ .History_Interactive_Svg{min-height:150px}
+ .History_Summary_Metrics{gap:5px}
+ .History_Mini_Metric{padding:7px 8px}
+ .History_Mini_Metric strong{font-size:15px}
+ .History_Mini_Metric small{font-size:10px}
+ .History_Focus_Row{font-size:11px}
+ .History_Reading_Row{font-size:10px}
+ .Clock_Chip{min-width:100px;padding:8px}
+ .Clock_Time{font-size:17px}
+ #Insight_Hours{gap:2px}
+}
+@media(max-width:420px){
+ .History_Mini_Metric strong{font-size:13px}
+ .History_Mini_Metric span{font-size:10px}
+ .History_Tooltip{min-width:160px}
+ .Insight_Day_Filter{max-width:145px}
+ #Insight_Hours .Insight_Hour_Column small{font-size:8px}
+}
+
+.Insight_Top{position:sticky;top:0;z-index:6;margin:0 0 15px;padding:8px 0 10px;background:#0d1a28}

@@ -4,16 +4,16 @@ import {
 } from "./country-metrics-utils.mjs";
 
 const Country_Drawer = document.querySelector(".Insight_Drawer");
-const Gender_Storage_Key = "country-pulse-gender-scenarios-v1";
+const Gender_Storage_Key = "country-pulse-gender-scenarios-v2";
 const Format_Number = new Intl.NumberFormat("en-US");
 const Format_Compact = new Intl.NumberFormat("en-US",{maximumFractionDigits:2});
 const Population_Source_Link = "https://data.worldbank.org/indicator/SP.POP.TOTL";
 let Population_By_Country = {};
 let Population_Last_Updated = "";
 let Selected_Country_Code = null;
-let Gender_Preset_Key = "flingster";
-let Women_Percent = 30;
-let Couples_Percent = 0;
+let Gender_Preset_Key = "official";
+let Women_Percent = null;
+let Couples_Percent = null;
 
 try {
   const Stored = JSON.parse(localStorage.getItem(Gender_Storage_Key) || "{}");
@@ -71,20 +71,30 @@ function Update_Scenario() {
   if (Current_Preset.url) Source_Anchor.href = Current_Preset.url;
   else Source_Anchor.removeAttribute("href");
   Source_Note.textContent = Current_Preset.note +
-    (Gender_Preset_Key === "custom" ? "" :
-      " Couples set to 0% only as an initial modeling assumption.");
+    ((Current_Preset.women===null || Gender_Preset_Key==="custom" ||
+      Gender_Preset_Key==="balanced") ? "" :
+      " Couples default to zero only because none were measured.");
+  const Confidence=document.getElementById("Scenario_Source_Quality");
+  Confidence.dataset.trust=Current_Preset.trust||"low";
+  Confidence.textContent=Gender_Preset_Key==="official"?"Official data · not published":
+    Current_Preset.trust==="medium"?"Platform-specific · third-party":
+    Current_Preset.trust==="low"?"Indirect / limited evidence":"Hypothetical only";
+  document.getElementById("Scenario_Section").dataset.scenario=Gender_Preset_Key;
   document.getElementById("Scenario_Select").value = Gender_Preset_Key;
   const Women_Slider = document.getElementById("Scenario_Women_Range");
   const Couples_Slider = document.getElementById("Scenario_Couples_Range");
-  Women_Slider.max = String(100 - Couples_Percent);
-  Couples_Slider.max = String(100 - Women_Percent);
-  Women_Slider.value = String(Women_Percent);
-  Couples_Slider.value = String(Couples_Percent);
-  Set_Text("Scenario_Women_Pct", Women_Percent + "%");
-  Set_Text("Scenario_Couples_Pct", Couples_Percent + "%");
+  const Unavailable=Gender_Preset_Key==="official";
+  Women_Slider.disabled=Unavailable;
+  Couples_Slider.disabled=Unavailable;
+  Women_Slider.max=String(100-(Couples_Percent??0));
+  Couples_Slider.max=String(100-(Women_Percent??0));
+  Women_Slider.value=String(Women_Percent??0);
+  Couples_Slider.value=String(Couples_Percent??0);
+  Set_Text("Scenario_Women_Pct",Unavailable?"—":Women_Percent+"%");
+  Set_Text("Scenario_Couples_Pct",Unavailable?"—":Couples_Percent+"%");
   const Reported_Count = window.CountryPulse_Data?.Country_Rows?.find(
     (Row) => Row.Code === Selected_Country_Code)?.Count;
-  const Split = Calculate_Gender_Scenario(Reported_Count, Women_Percent, Couples_Percent);
+  const Split = Unavailable?null:Calculate_Gender_Scenario(Reported_Count,Women_Percent,Couples_Percent);
   for (const Category of ["Men","Women","Couples"]) {
     const Card = document.getElementById("Scenario_" + Category);
     const Output = Card.querySelector("strong");
@@ -97,10 +107,12 @@ function Update_Scenario() {
   ]) {
     document.querySelector(".Scenario_Bar ." + Category).style.width = Percentage + "%";
   }
-  Set_Text("Scenario_Count_Note", Split ?
-    "Modeled shares of " + Format_Number.format(Split.Total) +
-    " provider-reported online units. Not observed genders or unique people." :
-    "Choose a country to calculate a hypothetical breakdown.");
+  Set_Text("Scenario_Count_Note",Split?
+    "Hypothetical allocation of "+Format_Number.format(Split.Total)+
+    " reported activity units. Not verified genders or unique people." :
+    Gender_Preset_Key==="official"?
+    "No verified public breakdown is available. Select a third-party or custom scenario to explore assumptions." :
+    "Choose a country for an illustrative scenario.");
 }
 
 function Update_Pool_Shares() {
@@ -198,6 +210,31 @@ function Create_Country_Extras() {
     Layout.append(Trend_Sections[0],Trend_Sections[1]);
   }
 
+  const Menu=document.getElementById("Scenario_Select");
+  Menu.replaceChildren();
+  for(const [Key,Preset] of Object.entries(Gender_Presets).sort((A,B)=>(A[1].rank??100)-(B[1].rank??100))){
+    const Option=document.createElement("option");
+    Option.value=Key;Option.textContent=Preset.title;Menu.append(Option);
+  }
+  const Confidence=document.createElement("span");
+  Confidence.id="Scenario_Source_Quality";
+  Confidence.className="Scenario_Source_Quality";
+  Scenario_Section.querySelector(".Scenario_Sources").after(Confidence);
+  const Demographic_Details=document.createElement("details");
+  Demographic_Details.id="Scenario_Disclosure";
+  Demographic_Details.className="Scenario_Disclosure";
+  const Demographic_Summary=document.createElement("summary");
+  Demographic_Summary.textContent="Men / women / couples · sourced scenarios";
+  Demographic_Details.append(Demographic_Summary,Scenario_Section);
+  const Pool_Details=document.createElement("details");
+  Pool_Details.id="Insight_Pools_Details";
+  Pool_Details.className="Pool_Compare_Disclosure";
+  const Pool_Summary=document.createElement("summary");
+  Pool_Summary.textContent="Adult / Default / Combined · last saved comparison";
+  Pool_Details.append(Pool_Summary,
+    Country_Drawer.querySelector("#Insight_Pool_Compare"),
+    Country_Drawer.querySelector("#Insight_Pool_Time"),Pool_Shares);
+  Country_Drawer.querySelector(".Insight_Inner").append(Pool_Details,Demographic_Details);
   document.getElementById("Scenario_Select").addEventListener("change", (Event_Object) => {
     Gender_Preset_Key = Event_Object.target.value;
     const Preset = Gender_Presets[Gender_Preset_Key];
@@ -209,13 +246,13 @@ function Create_Country_Extras() {
   });
   document.getElementById("Scenario_Women_Range").addEventListener("input", (Event_Object) => {
     Gender_Preset_Key = "custom";
-    Women_Percent = Math.min(100-Couples_Percent,Number(Event_Object.target.value));
+    Women_Percent = Math.min(100-(Couples_Percent??0),Number(Event_Object.target.value));
     Save_Gender_Scenario();
     Update_Scenario();
   });
   document.getElementById("Scenario_Couples_Range").addEventListener("input", (Event_Object) => {
     Gender_Preset_Key = "custom";
-    Couples_Percent = Math.min(100-Women_Percent,Number(Event_Object.target.value));
+    Couples_Percent = Math.min(100-(Women_Percent??0),Number(Event_Object.target.value));
     Save_Gender_Scenario();
     Update_Scenario();
   });

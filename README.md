@@ -88,6 +88,22 @@ interest, or waiting-user totals.
 
 These are UI changes to provider-reported statistics; they do not change the underlying public counts or provide live gender, couples or interest-popularity data.
 
+## Rich history, local clocks and best-hour confidence
+
+- Clicking a country opens a centered modal. **Live or saved reported activity** remains the primary statistic.
+- **Interactive history:** hover or touch points for the exact saved count, selected-country time-zone timestamp and change from the preceding reading; keyboard focus supports Left/Right/Home/End. A visible readout stays below the chart, and the vertical scale is explicitly labeled as auto-scaled. Dashed segments highlight missing observation gaps rather than implying continuous measurements.
+- Saved-history inspector lists actual point values and offers a country/pool-specific **CSV export**. Summary facts show the most recent saved point, movement versus previous, observed range and time-range coverage.
+- **24-hour hour-of-day view:** all 24 bins remain visible, even if there are too few data points for a recommendation. Tap/hover/focus to see average, minimum, maximum, sample count and distinct observed days. Filter all days, weekdays or weekends. Only repeated observations across days qualify for best-time suggestions, and confidence labels remain preliminary until sample and time coverage improve.
+- **Local clocks:** representative IANA time zones for the selected country (e.g., U.S. coasts, Australian states, Brazil and Russia). Choose a city to recalculate the chart/peak hours in its actual local time; Your Time and UTC remain available. Uses browser time-zone updates including daylight saving. This does not assert every region of a multi-time-zone country has the same clock.
+- **Evidence-ranked gender scenarios:** on a fresh browser the default is **Official data not published**, displaying no invented numbers. The user can explicitly select a Flingster-specific third-party estimate, a broad online-dater survey, two imperfect Tinder-derived scenarios, a low-confidence DirtyRoulette claim, or custom assumptions. Sources and their methodological limitations are displayed beside each option. Couples are not measured in any supplied source and default zeros in scenarios are *only assumptions*.
+- Scenarios and shared pool comparisons are in separate, collapsed disclosures so actual activity history occupies the prominent space.
+
+### Methodology and source caveats
+
+Flingster/DirtyRoulette's public feeds do **not** report verified live gender, couples, waiting-to-match or interest-tag population counts. Source-specific ratios must not be presented as current country populations. The Flingster review from [DatingScout](https://www.datingscout.com/flingster/review) reports 70/30 without a disclosed sample method; a [DatingScout broader survey](https://www.datingscout.sg/online-dating-statistics) gives 70.9%/27.4% plus 1.7% not accounted for. [SwipeStats' Tinder profiles](https://www.swipestats.io/blog/tinder-statistics) are voluntary uploads, not Flingster participants. Different reports from SwipeStats even report different gender proportions and must not be conflated. There is no valid official country-level proportion.
+
+The collector still runs on the existing scheduled GitHub workflow. Gaps in the source are shown honestly—do not backfill missed half-hours by linear interpolation or infer missing users.
+
 ## Collection
 
 The existing [CountryPulse · Capture and publish](.github/workflows/collect-and-deploy.yml) GitHub Actions workflow runs on the `7,37 * * * *` schedule and on repository pushes. GitHub schedules may be late or skipped. Its collector fetches validated Adult, Default and Combined responses, preserves historic Adult-only snapshots, and stores a rolling 45 days in `data/history.json`.
