@@ -122,6 +122,8 @@ Inspect the loaded service using `launchctl list com.royagiv.countrypulse.dispat
 
 A duplicate guard prevents an additional dispatch within 20 minutes of a recent successful dispatch. Independently, the collector rejects repeated readings within 25 minutes or the same half-hour window. The workflow uses a non-canceling concurrency group and ordinary, non-force Git pushes. A manual M4 dispatch on October 22, 2026 successfully completed both capture and deployment jobs.
 
+Provider responses occasionally have inconsistent totals or duplicate country keys. The collector **rejects those readings** rather than inventing corrections, attempts up to three allowlisted hosts for each pool, and saves validated Adult history even if secondary pools are unavailable. When the provider remains invalid, GitHub Actions records a visible warning but can still deploy the updated UI with the last trusted data. Thus a successful deployment does **not** itself prove a new measurement was saved; check the freshness badge and the collector step's outcome.
+
 ### Country table columns
 
 The main table now includes **Δ users (~30m)**, **Δ %**, and **current representative local time** alongside the existing reported counts and world share. Each delta is compared only against a valid earlier snapshot of the *same pool* from **18 to 42 minutes** before the observation. A dash means no suitable baseline was collected (or the country is missing from it), **not zero change**. Cell tooltips show the actual elapsed minutes, previous count, and baseline timestamp. You can sort by biggest gains and drops.

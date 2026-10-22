@@ -33,7 +33,17 @@ jobs:
         run: node --test tests/*.test.mjs
 
       - name: Capture one public country-count snapshot
+        id: capture
+        continue-on-error: true
         run: node scripts/collect.mjs
+
+      - name: Record failed-provider capture warning
+        if: steps.capture.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::warning title=CountryPulse capture unavailable::Provider readings failed validation; the last valid history remains unchanged. Dashboard deployment will continue."
+          echo "### CountryPulse source warning" >> "$GITHUB_STEP_SUMMARY"
+          echo "This capture did not produce valid country statistics. Existing saved history is preserved; check the freshness badge and collector logs." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Capture brand network activity and daily configuration
         run: node scripts/collect-network.mjs

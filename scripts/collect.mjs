@@ -14,6 +14,13 @@ export function Parse_Online_Response(Html_Text, Timestamp_Seconds = Math.floor(
   }
   const Match = Html_Text.match(/"xhrl"\s*:\s*"online"\s*,\s*"xhrd"\s*:\s*(\{[\s\S]*?\})\s*,\s*"xhrh"\s*:/);
   if (!Match) throw new Error("Site did not return an online-count payload");
+  // JSON.parse silently keeps the *last* occurrence of a duplicate country key.
+  // Reject ambiguous source payloads instead of guessing which value was intended.
+  const Raw_Country_Codes = [...Match[1].matchAll(/"([A-Z]{2})"\s*:/g)]
+    .map((Entry) => Entry[1]);
+  if (new Set(Raw_Country_Codes).size !== Raw_Country_Codes.length) {
+    throw new Error("Country count reconciliation failed: duplicate country code in provider payload");
+  }
   const Payload = JSON.parse(Match[1]);
   if (!Number.isSafeInteger(Payload.ALL) || Payload.ALL <= 0) {
     throw new Error("Missing or invalid worldwide total");
@@ -27,7 +34,9 @@ export function Parse_Online_Response(Html_Text, Timestamp_Seconds = Math.floor(
     .sort(([First_Code], [Second_Code]) => First_Code.localeCompare(Second_Code));
   const Total_From_Countries = Country_Entries.reduce((Sum, [, Count]) => Sum + Count, 0);
   if (Country_Entries.length < 20 || Total_From_Countries !== Payload.ALL) {
-    throw new Error("Country count reconciliation failed");
+    throw new Error("Country count reconciliation failed: country sum " +
+      Total_From_Countries + " differs from reported ALL " + Payload.ALL +
+      " (" + Country_Entries.length + " country entries)");
   }
   const Snapshot = { t: Timestamp_Seconds, n: Payload.ALL, c: Object.fromEntries(Country_Entries) };
   if (Number.isSafeInteger(Payload.Members) && Payload.Members > 0) Snapshot.members = Payload.Members;
@@ -98,6 +107,24 @@ export async function Fetch_Online_Response(Fetch_Function = fetch, Room = "Adul
   throw new Error("Could not collect validated " + Room + " counts: " + (Last_Error?.message || "unknown error"));
 }
 
+export async function Fetch_Validated_Pool_With_Failover(Fetch_Function = fetch, Room = "Adult") {
+  if (!Pool_Names.includes(Room)) throw Error("Unsupported activity pool");
+  const Allowed_Hosts = ["rest.flingster.com", "rest2.flingster.com", "api.flingster.com"];
+  const Errors = [];
+  for (const Host of Allowed_Hosts) {
+    try {
+      const Snapshot = await Fetch_Online_Response(Fetch_Function, Room, Host);
+      if (Host !== Allowed_Hosts[0]) {
+        console.warn("COUNTRYPULSE_FALLBACK_SOURCE " + Room + " " + Host);
+      }
+      return { Host, Snapshot };
+    } catch (Error_Object) {
+      Errors.push(Host + ": " + Error_Object.message);
+    }
+  }
+  throw Error("No validated " + Room + " pool across allowed hosts: " + Errors.join("; "));
+}
+
 export async function Verify_Flingster_Response_Identity(Fetch_Function = fetch) {
   const Headers = {
     "user-agent": "Mozilla/5.0 (compatible; CountryPulse/1.2)",
@@ -131,18 +158,29 @@ export async function Collect_Once() {
   // A valid HTTP status alone is not identity proof: reject the ALL:0, Members:3 fallback.
   const Verified_Identity = await Verify_Flingster_Response_Identity();
   // One collector for every pool. No per-country proxies or platform-specific aliases.
-  const [Adult_Snapshot, Default_Snapshot, Combined_Snapshot] = await Promise.all([
-    Fetch_Online_Response(fetch, "Adult"),
-    Fetch_Online_Response(fetch, "Default"),
-    Fetch_Online_Response(fetch, "Combined"),
+  const Adult_Result = await Fetch_Validated_Pool_With_Failover(fetch, "Adult");
+  const Adult_Snapshot = Adult_Result.Snapshot;
+  // Adult is the verified main feed. A temporary failure in a secondary pool must
+  // not erase a validated Adult snapshot; missing pools stay missing.
+  const [Default_Attempt, Combined_Attempt] = await Promise.allSettled([
+    Fetch_Validated_Pool_With_Failover(fetch, "Default"),
+    Fetch_Validated_Pool_With_Failover(fetch, "Combined"),
   ]);
+  const Default_Result = Default_Attempt.status === "fulfilled" ? Default_Attempt.value : null;
+  const Combined_Result = Combined_Attempt.status === "fulfilled" ? Combined_Attempt.value : null;
+  if (!Default_Result) console.warn("COUNTRYPULSE_POOL_UNAVAILABLE Default");
+  if (!Combined_Result) console.warn("COUNTRYPULSE_POOL_UNAVAILABLE Combined");
+  const Default_Snapshot = Default_Result?.Snapshot;
+  const Combined_Snapshot = Combined_Result?.Snapshot;
   // Optional cross-checks are nonblocking: a replica outage must not erase a valid primary reading.
   const Replica_Queries = [
     { Host_Name: "rest2.flingster.com", Room: "Adult" },
     { Host_Name: "api.flingster.com", Room: "Adult" },
     { Host_Name: "rest2.flingster.com", Room: "Default" },
     { Host_Name: "api.flingster.com", Room: "Default" },
-  ];
+  ].filter((Entry) => (Entry.Room === "Adult" ?
+    Entry.Host_Name !== Adult_Result.Host :
+    Boolean(Default_Result) && Entry.Host_Name !== Default_Result.Host));
   const Replica_Results = await Promise.allSettled(Replica_Queries.map((Entry) =>
     Fetch_Online_Response(fetch, Entry.Room, Entry.Host_Name)));
   const Summarize_Source = (Host_Name, Snapshot) => ({
@@ -151,9 +189,11 @@ export async function Collect_Once() {
     il: Snapshot.c.IL ?? null, us: Snapshot.c.US ?? null,
   });
   const Checks = {
-    Adult: [Summarize_Source("rest.flingster.com", Adult_Snapshot)],
-    Default: [Summarize_Source("rest.flingster.com", Default_Snapshot)],
+    Adult: [Summarize_Source(Adult_Result.Host, Adult_Snapshot)],
   };
+  if (Default_Result) {
+    Checks.Default = [Summarize_Source(Default_Result.Host, Default_Snapshot)];
+  }
   Replica_Results.forEach((Result, Index) => {
     if (Result.status !== "fulfilled") return;
     const Query = Replica_Queries[Index];
@@ -166,8 +206,13 @@ export async function Collect_Once() {
   const Incoming_Snapshot = {
     ...Adult_Snapshot,
     rooms: {
-      Default: { n: Default_Snapshot.n, c: Default_Snapshot.c },
-      Combined: { n: Combined_Snapshot.n, c: Combined_Snapshot.c },
+      ...(Default_Result ? { Default: { n: Default_Snapshot.n, c: Default_Snapshot.c } } : {}),
+      ...(Combined_Result ? { Combined: { n: Combined_Snapshot.n, c: Combined_Snapshot.c } } : {}),
+    },
+    source_hosts: {
+      Adult: Adult_Result.Host,
+      ...(Default_Result ? { Default: Default_Result.Host } : {}),
+      ...(Combined_Result ? { Combined: Combined_Result.Host } : {}),
     },
     checks: Checks,
   };
@@ -182,8 +227,8 @@ export async function Collect_Once() {
   await rename(Temporary_Path, History_Path);
   console.log("CAPTURED: " + new Date(Incoming_Snapshot.t * 1000).toISOString() +
     ", Adult=" + Incoming_Snapshot.n +
-    ", Default=" + Default_Snapshot.n +
-    ", Combined=" + Combined_Snapshot.n +
+    ", Default=" + (Default_Snapshot?.n ?? "unavailable") +
+    ", Combined=" + (Combined_Snapshot?.n ?? "unavailable") +
     ", members=" + (Incoming_Snapshot.members ?? "unavailable") +
     ", snapshots=" + New_History.snapshots.length);
   return true;
