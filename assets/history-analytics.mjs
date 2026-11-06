@@ -38,8 +38,37 @@ export function Summarize_Country_Series(Samples, Days = 7, Now_Seconds = Math.f
     Coverage_Percent:Math.min(100,Half_Hour_Slots/Expected*100),
     Gaps,Gaps_Count:Gaps.length,
     Oldest_At:First?.t??null, Latest_At:Latest?.t??null,
-    Expected_Slots:Expected,
+    Expected_Slots:Expected, Window_Start:Cutoff, Window_End:Now_Seconds,
   };
+}
+
+// Treat a local date as a calendar label. Calendar arithmetic on these labels
+// keeps missing days visible across DST changes and fractional UTC offsets.
+export function Summarize_Daily_History(Stats, Zone) {
+  const Formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone:Zone, year:"numeric", month:"numeric", day:"numeric",
+  });
+  function Calendar_Day(Seconds) {
+    const Parts = Object.fromEntries(Formatter.formatToParts(Seconds*1000)
+      .map(({type,value}) => [type,value]));
+    return Date.UTC(Parts.year, Parts.month-1, Parts.day);
+  }
+  const Start = Calendar_Day(Stats.Window_Start);
+  const End = Calendar_Day(Math.max(Stats.Window_End, Stats.Latest_At ?? 0));
+  const Day_Ms = 86400000;
+  const Rows = Array.from({length:1+(End-Start)/Day_Ms}, (_, Index) => ({
+    Date:Start+Index*Day_Ms, Readings:0, Min:null, Max:null, Sum:0,
+  }));
+  for (const Point of Stats.Points) {
+    const Row = Rows[(Calendar_Day(Point.t)-Start)/Day_Ms];
+    Row.Min = Row.Readings ? Math.min(Row.Min,Point.Count) : Point.Count;
+    Row.Max = Row.Readings ? Math.max(Row.Max,Point.Count) : Point.Count;
+    Row.Sum += Point.Count;
+    Row.Readings++;
+  }
+  return Rows.map(({Sum,...Row}) => ({
+    ...Row, Average:Row.Readings ? Math.round(Sum/Row.Readings) : null,
+  }));
 }
 
 export function Build_Hourly_Experience(Samples, Zone, Day_Filter = "all", Now_Seconds = Math.floor(Date.now()/1000)) {

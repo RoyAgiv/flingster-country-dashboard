@@ -96,6 +96,16 @@ Test("optional weekday/weekend requires multiple days from both groups", () => {
   Assert.equal(Calculate_Weekend_Average(Week.slice(0, 3), "IL"), null);
 });
 
+Test("weekday/weekend averages use the selected calendar across midnight", () => {
+  const First_Saturday = Date.parse("2026-10-24T01:00:00Z") / 1000;
+  const Week = Array.from({length:7}, (_, Day) =>
+    Sample(First_Saturday + Day * 86400, { US: 10, IL: Day === 0 ? 700 : 0 }));
+  Assert.deepEqual(Calculate_Weekend_Average(Week, "IL", "Adult", "UTC"),
+    { Weekday: 0, Weekend: 350, Timezone: "UTC" });
+  Assert.deepEqual(Calculate_Weekend_Average(Week, "IL", "Adult", "America/New_York"),
+    { Weekday: 140, Weekend: 0, Timezone: "America/New_York" });
+});
+
 Test("parser includes membership/tags but no config or user secrets", () => {
   const Countries = Object.fromEntries(Array.from({ length: 26 }, (_, Index) =>
     [String.fromCharCode(65, 65 + Index), Index + 1]));

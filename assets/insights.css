@@ -31,6 +31,14 @@
 .Insight_Lead{font-size:12px;color:#93adbd;margin:10px 0 17px}
 .Insight_Controls{display:flex;gap:9px;margin:22px 0 18px;flex-wrap:wrap}
 .Insight_Controls select{font-size:12px;flex:1;min-width:170px;background:#172939}
+#Insight_Timezone{display:flex;gap:2px;padding:3px;background:#0c1b28;border:1px solid #34505e;border-radius:10px;flex:2}
+#Insight_Timezone label{position:relative;display:flex;flex:1;cursor:pointer}
+#Insight_Timezone input{position:absolute;width:1px;height:1px;opacity:0}
+#Insight_Timezone span{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:5px 9px;border:1px solid transparent;border-radius:7px;color:#a5bec9;font-size:12px;font-weight:750;line-height:1.35;white-space:nowrap}
+#Insight_Timezone small{font-weight:500;font-size:10px}
+#Insight_Timezone input:checked+span{background:#17403e;border-color:#548e83;color:#c2fff0}
+#Insight_Timezone input:focus-visible+span{outline:2px solid #a0fff0;outline-offset:1px}
+#Insight_Timezone input:disabled+span{color:#708995;cursor:default}
 .Insight_Stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px}
 .Insight_Stat{border:1px solid #294455;background:#132534;border-radius:12px;padding:14px 12px;min-width:0}
 .Insight_Stat_Label{font-size:11px;color:#99b3c2}

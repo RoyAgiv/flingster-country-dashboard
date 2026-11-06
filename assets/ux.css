@@ -25,17 +25,14 @@
 .Quick_Nav_Link{display:inline-block;border-radius:8px;padding:7px 9px;text-decoration:none;color:#d2e5ea;font-size:12px;font-weight:750;white-space:nowrap}
 .Quick_Nav_Link:hover,.Quick_Nav_Link:focus-visible{color:#97f4e5;background:#223e49}
 .Quick_Nav_Right{display:flex;align-items:center;gap:9px;flex:1;justify-content:flex-end;min-width:185px}
-.Quick_Data_Status{font-size:11px;border:1px solid #5c726f;border-radius:999px;padding:5px 9px;white-space:nowrap;color:#d2e2e4;background:#213640;font-weight:750}
-.Quick_Data_Status[data-source="live"]{border-color:#36877c;background:#123d3b;color:#a4f9e9}
-.Quick_Data_Status[data-source="saved"]{border-color:#8a7045;background:#3a352d;color:#f4d49f}
-.Quick_Data_Status[data-source="unavailable"]{border-color:#7e5351;color:#ffb7b4}
 .Quick_Search{max-width:175px;min-width:115px;width:100%;background:#102431;border:1px solid #375464;border-radius:9px;min-height:35px;color:#f2fafc;padding:6px 10px!important;font-size:12px!important}
-.View_Actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 8px;color:#a8bfca;font-size:11px}
-.View_Badge{border:1px solid #587474;border-radius:999px;padding:5px 9px;color:#b9e2dc;white-space:nowrap}
-.View_Meta{flex:1;min-width:170px;color:#abc6d0;font-size:11px}
-.View_Buttons{display:flex;gap:6px}
-.View_Buttons .Secondary_Button{padding:6px 10px;font-size:11px}
+.View_Actions{position:relative;font-size:12px}
+.View_Actions summary{cursor:pointer;color:#c1d6de;padding:8px 10px;border:1px solid #375464;border-radius:8px;white-space:nowrap}
+.View_Actions[open] summary{color:#a0fff0}
+.View_Buttons{position:absolute;right:0;top:calc(100% + 6px);z-index:1;min-width:160px;display:grid;gap:6px;background:#142735;border:1px solid #375464;border-radius:10px;padding:8px;box-shadow:0 8px 26px #0005}
+.View_Buttons .Secondary_Button{text-align:left}
 .View_Action_Status{font-size:11px;color:#a6ecda}
+.View_Action_Status:empty{display:none}
 #rankings,#trends,#countries,#Network_Explorer,#MatchLab,#Country_Compare,#More_Data{scroll-margin-top:98px}
 .Compare_Panel{margin:0 0 18px}
 .Compare_Inner{padding:16px 18px 20px;border-top:1px solid #2d4654}
@@ -56,7 +53,10 @@
 .Compare_Card button{align-self:flex-start;padding:7px 10px;margin-top:auto}
 .Compare_Empty{padding:16px;color:#b2cbd2;border:1px dashed #395565;border-radius:10px;grid-column:1/-1;font-size:12px}
 .Compare_Add_Button{font-size:20px}
-.Planner_Status{padding:12px 2px 0;color:#aad3ce;font-size:12px;line-height:1.6}
+.Planner_Status{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px;margin:0 0 14px;border-left:3px solid #66d6bd;padding:8px 12px;background:#112c32;color:#d8f5ee;border-radius:0 8px 8px 0}
+.Planner_Status span{font-size:12px;font-weight:700}
+.Planner_Status strong{font-size:17px;font-variant-numeric:tabular-nums}
+.Planner_Status small{font-size:12px;color:#a8c7ca}
 .Stats .Card_Label, .Insight_Mini_Label,.Card_Note,.History_Coverage,.Data_Small,.Network_Card_Foot,.Trend_Foot{font-size:12px!important;line-height:1.55!important}
 .Scenario_Foot,.Research_Muted,.Insight_Disclaimer,.Network_Comparison_Text{color:#acc1c9!important}
 @media(max-width:980px){
@@ -74,9 +74,6 @@
  .Quick_Nav_Link{padding:6px 8px;font-size:11px}
  .Quick_Nav_Right{width:100%}
  .Quick_Search{max-width:185px}
- .View_Buttons{width:100%}
- .View_Buttons button{flex:1}
- .View_Meta{min-width:0}
  .Compare_Toolbar{grid-template-columns:1fr}
  .Compare_Results{grid-template-columns:1fr 1fr}
  .Compare_Selects{grid-template-columns:1fr 1fr}
@@ -100,3 +97,21 @@
 .MatchLab_Button:disabled{opacity:.45;cursor:not-allowed}
 .MatchLab_Active button{min-height:37px}
 #MatchLab .MatchLab_Actions>.Danger{margin-left:auto}
+
+/* Keep the user's country first, with one large target for its history. */
+.Stats .Viewer_Card{padding:0;background:linear-gradient(125deg,#183b40,#12282f);border-color:#3d746e;display:grid}
+.Viewer_Open{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:5px;width:100%;height:100%;min-height:112px;padding:15px 17px;background:transparent;border:0;border-radius:inherit;color:var(--Text);text-align:left;line-height:1.35}
+.Viewer_Open:disabled{cursor:default;opacity:1}
+.Viewer_Open:hover:enabled{background:rgba(110,230,202,.07)}
+.Viewer_Open:focus-visible{outline:2px solid var(--Ux_Teal);outline-offset:-3px}
+.Viewer_Kicker{text-transform:uppercase;letter-spacing:.09em;font-weight:750;font-size:10px;color:#98e3d4;margin-right:42px}
+.Viewer_Name{font-size:clamp(19px,2vw,25px);line-height:1.15;letter-spacing:-.045em;overflow-wrap:anywhere}
+.Viewer_Reading{color:#b6d5d4;font-size:12px;margin-right:15px}
+.Viewer_Arrow{position:absolute;bottom:12px;right:13px;color:#97e9d9;font-size:17px}
+.Viewer_Open:disabled .Viewer_Arrow{display:none}
+.Viewer_Change{position:absolute;right:8px;top:6px;border-radius:6px;padding:4px 6px;color:#b9d9d4;font-size:10px}
+.Viewer_Change:hover,.Viewer_Change:focus-within{background:#27494e;color:#fff}
+.Viewer_Change:focus-within{outline:2px solid var(--Ux_Teal)}
+.Viewer_Change select{position:absolute;inset:0;width:100%;height:100%;min-height:0;opacity:0;cursor:pointer}
+@media(max-width:620px){.Viewer_Open{padding:14px 11px;min-height:110px}.Viewer_Change{top:3px;right:3px}.Viewer_Reading{font-size:11px}.Viewer_Kicker{font-size:9px}}
+.Viewer_Card:has(.Viewer_Open:disabled) .Viewer_Change{inset:0;text-align:right;background:transparent;padding:8px 13px}

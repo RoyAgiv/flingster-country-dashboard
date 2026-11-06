@@ -141,7 +141,7 @@ function Render_Movers() {
     Global_Change.textContent = "Waiting for history";
     return;
   }
-  const Now_Seconds = Math.floor(Date.now() / 1000);
+  const Now_Seconds = Current_Data.Observed_At || Math.floor(Date.now() / 1000);
   const Result = Calculate_Country_Movers(
     Current_Data.Country_Rows, Historical_Snapshots, Current_Data.Room,
     Now_Seconds, Trend_Window
@@ -158,11 +158,11 @@ function Render_Movers() {
   Trend_Status.textContent = Result.Rises.length + " rising · " + Result.Falls.length + " falling";
   const Global_Difference = Current_Data.Online_Total - Result.Baseline.n;
   const Global_Percent = Math.round(Global_Difference / Result.Baseline.n * 1000) / 10;
+  const Gap_Label = Elapsed_Minutes >= 1440 ? Math.round(Elapsed_Minutes / 1440) + "d" :
+    Elapsed_Minutes >= 60 ? Math.round(Elapsed_Minutes / 60) + "h" : Elapsed_Minutes + "m";
   Global_Change.textContent = Format_Signed(Global_Difference) + " (" +
-    Format_Signed(Global_Percent, "%") + ") since baseline";
-  Trend_Window_Label.textContent = "Compared with " +
-    (Elapsed_Minutes >= 60 ? Math.round(Elapsed_Minutes / 60) + "h" : Elapsed_Minutes + "m") +
-    " ago in " + Current_Data.Room + " · countries ≥25 in both readings.";
+    Format_Signed(Global_Percent, "%") + ") vs " + Gap_Label + " earlier";
+  Trend_Window_Label.textContent = "Compared with " + Gap_Label + " earlier in " + Current_Data.Room + " · countries ≥25 in both readings.";
   Render_Mover_List(Trend_Rises, Result.Rises, "up");
   Render_Mover_List(Trend_Falls, Result.Falls, "down");
 }

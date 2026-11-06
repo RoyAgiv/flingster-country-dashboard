@@ -7,6 +7,7 @@ CountryPulse is a lightweight, searchable dashboard for activity **reported** by
 ## Dashboard
 
 - **Adult**, **Default**, or **Combined** technical pools. Adult is the pool used by both tested Flingster and DirtyRoulette pages. The Default pool's site ownership is unknown; Combined is a provider-reported query (`room=Adult,Default`), **not** an arithmetic sum or verified distinct-user total.
+- The first country card uses the country detected for your connection. You can choose a country manually in this browser. Select the card to open its activity history.
 - Country rankings, top 10/25/50/all, search, sort, CSV export, and pinning countries.
 - Rising/falling country cards with absolute and relative changes over the latest saved snapshot, 1 hour, 24 hours, or 7 days. Comparisons always remain **within the same pool**. Low counts (under 25) are excluded from mover rankings to avoid misleading swings.
 - Click countries for saved hourly patterns, activity history, cross-pool **last-saved** counts, and weekday versus weekend averages as sufficient data accumulates.
@@ -91,10 +92,10 @@ These are UI changes to provider-reported statistics; they do not change the und
 ## Rich history, local clocks and best-hour confidence
 
 - Clicking a country opens a centered modal. **Live or saved reported activity** remains the primary statistic.
-- **Interactive history:** hover or touch points for the exact saved count, selected-country time-zone timestamp and change from the preceding reading; keyboard focus supports Left/Right/Home/End. A visible readout stays below the chart, and the vertical scale is explicitly labeled as auto-scaled. Dashed segments highlight missing observation gaps rather than implying continuous measurements.
-- Saved-history inspector lists actual point values and offers a country/pool-specific **CSV export**. Summary facts show the most recent saved point, movement versus previous, observed range and time-range coverage.
+- **Daily summary** opens first for 7, 30 and 45 days. Each date in the selected timezone shows its observed low, high, average and number of saved readings. Dates with no readings remain visible.
+- **Individual readings** opens first for the last 24 hours. Inspect the exact count, time and change by pointer, touch or keyboard (Left, Right, Home and End). Shading marks gaps longer than 90 minutes. Either view can export the selected country and pool’s raw readings as CSV.
 - **24-hour hour-of-day view:** all 24 bins remain visible, even if there are too few data points for a recommendation. Tap/hover/focus to see average, minimum, maximum, sample count and distinct observed days. Filter all days, weekdays or weekends. Only repeated observations across days qualify for best-time suggestions, and confidence labels remain preliminary until sample and time coverage improve.
-- **Local clocks:** representative IANA time zones for the selected country (e.g., U.S. coasts, Australian states, Brazil and Russia). Choose a city to recalculate the chart/peak hours in its actual local time; Your Time and UTC remain available. Uses browser time-zone updates including daylight saving. This does not assert every region of a multi-time-zone country has the same clock.
+- **Your time** is the default for daily history and best hours. Switch to **Country time** to use a representative city in the selected country, or choose **UTC**. The popup remembers the time mode in this browser. Day and hour groupings follow the selected timezone, including daylight-saving changes.
 - **Evidence-ranked gender scenarios:** on a fresh browser the default is **Official data not published**, displaying no invented numbers. The user can explicitly select a Flingster-specific third-party estimate, a broad online-dater survey, two imperfect Tinder-derived scenarios, a low-confidence DirtyRoulette claim, or custom assumptions. Sources and their methodological limitations are displayed beside each option. Couples are not measured in any supplied source and default zeros in scenarios are *only assumptions*.
 - Scenarios and shared pool comparisons are in separate, collapsed disclosures so actual activity history occupies the prominent space.
 

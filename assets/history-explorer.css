@@ -17,7 +17,7 @@
 .History_Interactive_Svg:focus-visible{outline:2px solid #84f0dd;outline-offset:-3px;border-radius:7px}
 .History_Grid_Line{stroke:#304d5e;stroke-width:1;stroke-dasharray:3 5}
 .History_Line{stroke:#6eebd8;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.History_Missing_Gap{stroke:#d4c185;stroke-width:1.8;stroke-dasharray:5 6;opacity:.67}
+.History_Missing_Gap{fill:#d4c185;opacity:.12;pointer-events:none}
 .History_Axis_Text{fill:#a1bdca;font:12px system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 .History_Crosshair{stroke:#c0fff0;stroke-width:1.3;stroke-dasharray:3 4;opacity:.7;pointer-events:none}
 .History_Focus_Dot{fill:#d1fff2;stroke:#236f70;stroke-width:3.5;pointer-events:none}
@@ -101,3 +101,28 @@
 }
 
 .Insight_Top{position:sticky;top:0;z-index:6;margin:0 0 15px;padding:8px 0 10px;background:#0d1a28}
+
+/* The day view keeps the numeric range visible on narrow screens as well. */
+#Insight_Trend{display:block;height:auto;min-height:0}
+.History_View_Tools,.History_View_Switch{display:flex;align-items:center}
+.History_View_Tools{justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.History_View_Switch{gap:2px;padding:3px;border-radius:9px;background:#0a1c29;border:1px solid #355263}
+.History_View_Switch button,.History_Export{font:inherit;font-size:12px;font-weight:650;color:#bad1dc;border-radius:6px;background:transparent;cursor:pointer}
+.History_View_Switch button{padding:7px 9px;border:0}
+.History_View_Switch button[aria-pressed=true]{background:#245254;color:#dcfff5}
+.History_Export{padding:7px 9px;border:1px solid #426272}
+.History_Daily_Scroll{max-height:320px;overflow:auto;scrollbar-width:thin;border:1px solid #345263;border-radius:8px}
+.History_Daily_Table{width:100%;min-width:0;table-layout:auto;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+.History_Daily_Table th,.History_Daily_Table td{border:0;border-bottom:1px solid #2c4554;padding:8px 10px;text-align:right;font-size:12px;color:#d6e7e8}
+.History_Daily_Table thead th{position:sticky;top:0;z-index:1;background:#193340;color:#b5cfda;font-size:11px;font-weight:650;letter-spacing:0;text-transform:none}
+.History_Daily_Table tr>:nth-child(-n+2){text-align:left}
+.History_Daily_Table tbody th{position:static;background:transparent;letter-spacing:0;text-transform:none;white-space:nowrap}
+.History_Daily_Table td:nth-child(2){width:42%;color:#abc8d0;font-size:11px}
+.History_Daily_Table td:nth-child(3){font-weight:700}
+.History_Daily_Table tbody tr:last-child>*{border-bottom:0}
+.History_Daily_Track{position:relative;display:block;margin:5px 2px 1px;height:3px;border-radius:3px;background:#2b4251}
+.History_Daily_Band,.History_Daily_Mean{position:absolute;display:block;border-radius:3px;background:#64caba}
+.History_Daily_Band{height:3px;min-width:1px}
+.History_Daily_Mean{height:7px;width:5px;top:-2px;transform:translateX(-50%);background:#b3ffe4}
+.History_Daily_Missing td{color:#94acb7}
+@media(max-width:520px){.History_Daily_Table th,.History_Daily_Table td{padding:8px 5px}.History_Daily_Table td:nth-child(2){width:35%}}

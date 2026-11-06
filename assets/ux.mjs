@@ -1,7 +1,4 @@
-import { Compare_Countries, Age_Label } from "./reliability-utils.mjs";
-import { Aggregate_Hourly } from "./insights-utils.mjs";
-import { Build_Hourly_Experience } from "./history-analytics.mjs";
-import { Get_Pool_Snapshots } from "./trends-utils.mjs";
+import { Compare_Countries } from "./reliability-utils.mjs";
 
 const View_Key = "countrypulse-view-v1";
 const Country_Selects = [];
@@ -12,7 +9,6 @@ const Sort_Select = document.getElementById("Sort_Select");
 const Selected_Region_Codes = ["US","IL"];
 let Current_Data = window.CountryPulse_Data || null;
 let Saved_History = window.CountryPulse_History || [];
-let Observation_Status = null;
 let Active_Country_Code = null;
 let Compare_Period = "recent";
 let Has_Initialized_View = false;
@@ -54,10 +50,6 @@ function Create_Quick_Navigation() {
     Links.append(Link);
   }
   const Right = Element("div","Quick_Nav_Right");
-  const Freshness = Element("span","Quick_Data_Status","Checking…");
-  Freshness.id="Quick_Data_Status";
-  Freshness.setAttribute("role","status");
-  Freshness.setAttribute("aria-live","polite");
   const Quick_Search = Element("input","Quick_Search");
   Quick_Search.id="Quick_Search";
   Quick_Search.type="search";
@@ -71,6 +63,13 @@ function Create_Quick_Navigation() {
   Quick_Search.addEventListener("keydown",(Event_Object)=>{
     if(Event_Object.key==="Enter"){
       Event_Object.preventDefault();
+      const query = Quick_Search.value.trim().toLowerCase();
+      const rows = window.CountryPulse_Data?.Country_Rows || [];
+      const match = rows.find(row => row.Code.toLowerCase() === query || row.Name.toLowerCase() === query);
+      if (match) {
+        window.dispatchEvent(new CustomEvent("countrypulse:open-country",{detail:{Code:match.Code}}));
+        return;
+      }
       document.getElementById("countries").scrollIntoView({behavior:"smooth",block:"start"});
       Search_Input.focus();
     }
@@ -78,22 +77,19 @@ function Create_Quick_Navigation() {
   Search_Input.addEventListener("input",()=>{
     if(Quick_Search.value!==Search_Input.value)Quick_Search.value=Search_Input.value;
   });
-  Right.append(Freshness,Quick_Search);
+  Right.append(Quick_Search);
   Nav.append(Links,Right);
   document.querySelector(".Site_Bar").after(Nav);
   return Nav;
 }
 
 function Create_View_Actions() {
-  const Nav = document.querySelector(".Quick_Nav");
-  const Bar = Element("div","View_Actions");
+  const Bar = Element("details","View_Actions");
   Bar.id="View_Actions";
   const Status = Element("span","View_Action_Status","");
   Status.id="View_Action_Status";
-  const Status_Text = Element("div","View_Meta","");
-  Status_Text.id="View_Meta";
-  const View_Badge = Element("span","View_Badge","Reported estimates");
-  View_Badge.id="View_Badge";
+  Status.setAttribute("role","status");
+  const Summary = Element("summary","","View options");
   const Button_Actions = [["Copy link",Share_View],["Save view",Save_View],["Restore view",Restore_View]];
   const Actions = Element("div","View_Buttons");
   for(const [Text,Handler] of Button_Actions){
@@ -102,8 +98,9 @@ function Create_View_Actions() {
     Button.addEventListener("click",Handler);
     Actions.append(Button);
   }
-  Bar.append(View_Badge,Status_Text,Actions,Status);
-  Nav.after(Bar);
+  Actions.append(Status);
+  Bar.append(Summary,Actions);
+  document.querySelector(".Quick_Nav_Right").append(Bar);
 
   const Pool_Toolbar = document.querySelector(".Pool_Toolbar");
   const Pool_Hint = Element("div","Pool_Inline_Hint","Adult · used on tested Flingster and DirtyRoulette pages");
@@ -112,7 +109,7 @@ function Create_View_Actions() {
 
   const Refresh_Notice = document.getElementById("Refresh_Notice");
   Refresh_Notice?.setAttribute("aria-live","polite");
-  Render_Freshness();
+  Render_Pool_Hint(Current_Data?.Room);
 }
 
 function Collect_View() {
@@ -191,7 +188,7 @@ function Apply_View(View) {
     Search_Input.value=View.search.slice(0,70);
     Search_Input.dispatchEvent(new Event("input"));
   }
-  if(["largest","smallest","name"].includes(View.sort)){
+  if(["largest","smallest","name","rising","falling"].includes(View.sort)){
     Sort_Select.value=View.sort;
     Sort_Select.dispatchEvent(new Event("change"));
   }
@@ -338,63 +335,9 @@ function Render_Compare() {
   }
 }
 
-function Add_Planner() {
-  const Parent=document.querySelector("#Insight_Peaks")?.closest(".Insight_Section");
-  if(!Parent)return;
-  const Suggestion=Element("div","Planner_Status");
-  Suggestion.id="Planner_Status";
-  Suggestion.setAttribute("role","status");
-  Parent.append(Suggestion);
-  function Update() {
-    if(!Active_Country_Code)return;
-    const Pool=window.CountryPulse_Data?.Room || "Adult";
-    const Duration=Number(document.getElementById("Insight_Period").value)||7;
-    const Timezone=window.CountryPulse_Insight_Zone||
-      Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
-    const Data=Aggregate_Hourly(Get_Pool_Snapshots(Saved_History,Pool),Active_Country_Code,Timezone,Duration);
-    const Day_Filter=document.getElementById("Insight_Day_Filter")?.value||"all";
-    const Hourly=Build_Hourly_Experience(Data.Samples,Timezone,Day_Filter);
-    if(!Hourly?.Best_Hours.length){
-      Suggestion.textContent="Best-time planner: gathering data · "+(Hourly?.Sample_Count??0)+
-        " readings on "+(Hourly?.Coverage_Days??0)+" days, "+(Hourly?.Coverage_Hours??0)+
-        "/24 hours sampled. No reliable recommendation yet.";
-      return;
-    }
-    const Best=Hourly.Best_Hours[0];
-    Suggestion.textContent="Suggested hour: "+String(Best.Hour).padStart(2,"0")+":00–"+
-      String((Best.Hour+1)%24).padStart(2,"0")+":00 ("+Timezone+") · "+
-      Best.Sample_Count+" samples across "+Best.Distinct_Days+" days · preliminary";
-  }
-  window.addEventListener("countrypulse:country-open",(Event_Object)=>{
-    Active_Country_Code=Event_Object.detail?.Code||Active_Country_Code;
-    Update();
-  });
-  window.addEventListener("countrypulse:insight-render",Update);
-  window.addEventListener("countrypulse:history",Update);
-  for(const Id of ["Insight_Period","Insight_Timezone"]){
-    document.getElementById(Id)?.addEventListener("change",Update);
-  }
-}
-
-function Render_Freshness() {
-  const Source=Observation_Status;
-  const Badge=document.getElementById("Quick_Data_Status");
-  const View_Badge=document.getElementById("View_Badge");
-  const Meta=document.getElementById("View_Meta");
-  if(!Badge||!View_Badge||!Meta)return;
-  const Data_Kind=Source?.Has_Data?(Source.Mode==="live"?"live":"saved"):"unavailable";
-  Badge.dataset.source=Data_Kind;
-  Badge.textContent=Data_Kind==="live"?"Live-reported":Data_Kind==="saved"?
-    "Saved "+Age_Label(Source.Timestamp):"Data unavailable";
-  View_Badge.textContent=Data_Kind==="live"?"Live-reported":Data_Kind==="saved"?
-    "Saved snapshot":"No country reading";
-  Meta.textContent=Source?.Has_Data?
-    (new Date(Source.Timestamp*1000).toLocaleString()+" · "+Source.Room+
-      (Source.Fetch_State==="error"?" · live retry unavailable":"")):
-    (Source?.Error||"Waiting for the first observation");
+function Render_Pool_Hint(Room = "Adult") {
   const Pool_Hint=document.getElementById("Pool_Inline_Hint");
   if(Pool_Hint){
-    const Room=Source?.Room||"Adult";
     Pool_Hint.textContent=Room==="Adult"?"Adult · shared Flingster / DirtyRoulette reported feed":
       Room==="Default"?"Default · origin unexplained; not a gender pool":
       "Combined · provider-reported, not distinct users or an arithmetic sum";
@@ -403,6 +346,7 @@ function Render_Freshness() {
 
 function Update_Compare_On_Reading(Event_Object) {
   Current_Data=Event_Object.detail;
+  Render_Pool_Hint(Current_Data.Room);
   Refresh_Compare();
 }
 
@@ -410,33 +354,22 @@ function Setup() {
   Create_Quick_Navigation();
   Create_Compare();
   Create_View_Actions();
-  Add_Planner();
   window.addEventListener("countrypulse:data",Update_Compare_On_Reading);
   window.addEventListener("countrypulse:history",(Event_Object)=>{
     Saved_History=Event_Object.detail.Historical_Snapshots||[];
     Render_Compare();
   });
-  window.addEventListener("countrypulse:observation",(Event_Object)=>{
-    Observation_Status=Event_Object.detail;
-    Render_Freshness();
-  });
   window.addEventListener("countrypulse:country-open",(Event_Object)=>{
     Active_Country_Code=Event_Object.detail?.Code||null;
   });
-  window.addEventListener("countrypulse:pool-changing",()=>{
+  window.addEventListener("countrypulse:pool-changing",event=>{
+    Render_Pool_Hint(event.detail?.Room);
     Refresh_Compare();
-  });
-  window.addEventListener("countrypulse:request-state",()=>{
-    Render_Freshness();
   });
   Restore_From_Url();
   if(window.CountryPulse_Data)Refresh_Compare();
   if(window.CountryPulse_History?.length)Saved_History=window.CountryPulse_History;
-  if(window.CountryPulse_Data) {
-    const Data=window.CountryPulse_Data;
-    Observation_Status={Room:Data.Room,Mode:Data.Observation_Mode,Has_Data:true,Timestamp:Data.Observed_At};
-    Render_Freshness();
-  }
+
 }
 
 Setup();

@@ -88,9 +88,9 @@
 
     <section class="Hero">
       <div>
-        <div class="Eyebrow">Online users · Country explorer</div>
-        <h1>Where the world <span>connects.</span></h1>
-        <p class="Hero_Text">See who is trending, compare activity pools, and discover each country’s busiest hours.</p>
+        <div class="Eyebrow">Flingster &amp; DirtyRoulette</div>
+        <h1>Online activity <span>by country</span></h1>
+        <p class="Hero_Text">Select a country to see its history and busiest hours.</p>
       </div>
       <div class="Refresh_Area">
         <button class="Button" id="Refresh_Button" type="button"><span aria-hidden="true">↻</span> Refresh numbers</button>
@@ -112,9 +112,19 @@
     </section>
 
     <section class="Stats" aria-label="At a glance">
+      <article class="Card Viewer_Card">
+        <button class="Viewer_Open" id="Viewer_Open" type="button" aria-haspopup="dialog" disabled>
+          <span class="Viewer_Kicker" id="Viewer_Label">Your country</span>
+          <strong class="Viewer_Name" id="Viewer_Name">Locating…</strong>
+          <span class="Viewer_Reading" id="Viewer_Reading">Waiting for a reading</span>
+          <span class="Viewer_Arrow" aria-hidden="true">→</span>
+        </button>
+        <label class="Viewer_Change"><span aria-hidden="true">Change ▾</span>
+          <select id="Viewer_Choice" aria-label="Country shown on your card"><option value="">Automatic · connection country</option></select>
+        </label>
+      </article>
       <article class="Card"><div class="Card_Label">Reported online worldwide</div><div class="Card_Value Accent" id="World_Total">—</div><div class="Card_Note" id="Global_Change">Waiting for history</div></article>
       <article class="Card"><div class="Card_Label">Countries & territories</div><div class="Card_Value" id="Country_Total">—</div><div class="Card_Note">Locations with reported counts</div></article>
-      <article class="Card"><div class="Card_Label">Israel <span aria-hidden="true">🇮🇱</span></div><div class="Card_Value" id="Israel_Total">—</div><div class="Card_Note" id="Israel_Percent">Share of reported worldwide total</div></article>
       <article class="Card"><div class="Card_Label">Reported members</div><div class="Card_Value Small" id="Members_Total">—</div><div class="Card_Note Member_Growth" id="Members_Growth">Tracking member growth</div></article>
     </section>
 
@@ -198,6 +208,7 @@
   <script type="module">
     import { Select_Latest_Saved_Reading, Age_Label, Retry_Delay_Seconds, Determine_Chart_State } from "./assets/reliability-utils.mjs";
     import { Calculate_Thirty_Minute_Changes, Get_Representative_Country_Time, Compute_Collection_Health } from "./assets/country-table-metrics.mjs";
+    import { Setup_Viewer_Card } from "./assets/viewer-country.mjs";
     const Source_Url = "https://rest.flingster.com/xhr.html?v=2&online=1&room=Adult&config=1&lang=en";
     const Source_Origin = "https://rest.flingster.com";
     const Number_Formatter = new Intl.NumberFormat("en-US");
@@ -206,6 +217,7 @@
     let Data_Frame = document.getElementById("Data_Frame");
     let Selected_Room = "Adult";
     let Current_Metadata = {};
+    const Viewer_Card = Setup_Viewer_Card(Country_Name, Country_Flag);
     let Adult_Members = null;
     const Refresh_Button = document.getElementById("Refresh_Button");
     const Export_Button = document.getElementById("Export_Button");
@@ -276,7 +288,7 @@
         Notice.textContent = Fetch_State==="error" ?
           ("Live refresh unavailable" + (Scheduled_Retry_Seconds ? " · retry in ~"+Scheduled_Retry_Seconds+"s" : "") + ". " + Last_Error_Text) :
           Fetch_State==="loading" ? (Has_Data?"Checking live feed; saved numbers remain available":"Checking live feed…") :
-          "Latest live request succeeded";
+          "";
       }
       document.getElementById("Status").setAttribute("role","status");
       document.getElementById("Status").setAttribute("aria-live","polite");
@@ -513,9 +525,7 @@
       Export_Button.disabled=false;
       document.getElementById("World_Total").textContent=Format_Number(Online_Total);
       document.getElementById("Country_Total").textContent=Format_Number(Country_Rows.length);
-      const Israel_Row=Country_Rows.find(Country_Row=>Country_Row.Code==="IL");
-      document.getElementById("Israel_Total").textContent=Israel_Row?Format_Number(Israel_Row.Count):"—";
-      document.getElementById("Israel_Percent").textContent=Israel_Row?Format_Percent(Israel_Row.Count/Online_Total*100)+" of reported worldwide total":"Not included in this feed";
+      Viewer_Card.updateReading(Country_Rows, Online_Total);
       Render_Chart();Render_Table();
       window.CountryPulse_Data={Country_Rows,Online_Total,Room:Selected_Room,Members:Payload.Members,
         Adult_Members,Tags:Array.isArray(Payload.Tags)?Payload.Tags:[],Meta:Current_Metadata,
@@ -581,6 +591,7 @@
       if(!Event.data)return;
       if(Event.data.xhrl==="config"){
         const Config=Event.data.xhrd||{};
+        Viewer_Card.reportCountry(Config.UserCountry);
         Current_Metadata={...Current_Metadata,Site:typeof Config.Name==="string"?Config.Name:"Flingster",
           Visitor_Country:typeof Config.UserCountry==="string"?Config.UserCountry:undefined,
           Config_Fields:Object.keys(Config).length};
@@ -589,7 +600,10 @@
       if(Event.data.xhrl!=="online")return;
       const Headers=Event.data.xhrh||{};
       if(typeof Headers["x-site"]==="string")Current_Metadata.Site=Headers["x-site"];
-      if(typeof Headers["x-country"]==="string")Current_Metadata.Visitor_Country=Headers["x-country"];
+      if(typeof Headers["x-country"]==="string"){
+        Current_Metadata.Visitor_Country=Headers["x-country"];
+        Viewer_Card.reportCountry(Headers["x-country"]);
+      }
       try{Apply_Data(Event.data.xhrd)}catch(Error){Show_Error("Source returned an invalid country-count response.")}
     });
     window.addEventListener("countrypulse:request-state",()=>{
@@ -606,7 +620,8 @@
       Updated_At=null;Data_Mode="empty";Fetch_State="loading";
       Online_Total=0;Country_Rows=[];Current_Metadata={};
       window.CountryPulse_Data=null;
-      for(const Field of ["World_Total","Country_Total","Israel_Total"])document.getElementById(Field).textContent="—";
+      Viewer_Card.updateReading([], 0);
+      for(const Field of ["World_Total","Country_Total"])document.getElementById(Field).textContent="—";
       Export_Button.disabled=true;
       window.dispatchEvent(new CustomEvent("countrypulse:pool-changing",{detail:{Room}}));
       Apply_Saved_For_Room();

@@ -40,7 +40,7 @@ export function Get_Country_Time_Zones(Country_Code) {
   if (!Zones.length) {
     try {
       const Locale = new Intl.Locale("und-" + Country_Code);
-      const Values = typeof Locale.getTimeZones === "function" ? Locale.getTimeZones() : [];
+      const Values = typeof Locale.getTimeZones === "function" ? Locale.getTimeZones() : Locale.timeZones;
       Zones = (Values || []).slice(0,4).map((Zone) => [
         Zone, Zone.split("/").at(-1).replaceAll("_"," "),
       ]);

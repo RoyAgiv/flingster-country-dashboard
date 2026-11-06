@@ -104,19 +104,23 @@ export function Calculate_Member_Growth(Historical_Snapshots, Current_Members, N
   return Baseline ? Current_Members - Baseline.members : null;
 }
 
-export function Calculate_Weekend_Average(Historical_Snapshots, Country_Code, Room = "Adult") {
+export function Calculate_Weekend_Average(Historical_Snapshots, Country_Code, Room = "Adult", Timezone = "UTC") {
+  const Date_Formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: Timezone, weekday: "short", year: "numeric", month: "numeric", day: "numeric",
+  });
   const Weekday = [], Weekend = [];
   const Weekday_Dates = new Set(), Weekend_Dates = new Set();
   for (const Snapshot of Get_Pool_Snapshots(Historical_Snapshots, Room)) {
     const Count = Snapshot.c[Country_Code];
     if (!Number.isSafeInteger(Count)) continue;
     const Date_Object = new Date(Snapshot.t * 1000);
-    const Day = Date_Object.getUTCDay();
-    const Date_Key = Date_Object.toISOString().slice(0, 10);
-    if (Day === 0 || Day === 6) { Weekend.push(Count); Weekend_Dates.add(Date_Key); }
+    const Parts = Date_Formatter.formatToParts(Date_Object);
+    const Day = Parts.find((Part) => Part.type === "weekday").value;
+    const Date_Key = Parts.map((Part) => Part.value).join("");
+    if (Day === "Sun" || Day === "Sat") { Weekend.push(Count); Weekend_Dates.add(Date_Key); }
     else { Weekday.push(Count); Weekday_Dates.add(Date_Key); }
   }
   if (Weekday_Dates.size < 2 || Weekend_Dates.size < 2) return null;
   const Mean = (Array_Data) => Math.round(Array_Data.reduce((Sum, Value) => Sum + Value, 0) / Array_Data.length);
-  return { Weekday: Mean(Weekday), Weekend: Mean(Weekend), Timezone: "UTC" };
+  return { Weekday: Mean(Weekday), Weekend: Mean(Weekend), Timezone };
 }

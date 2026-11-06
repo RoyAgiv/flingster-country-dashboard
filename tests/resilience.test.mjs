@@ -81,7 +81,8 @@ Test("client has explicit saved/error UI and source-labelled UX sections",async(
   Assert.match(UX,/Country_Compare/);
   Assert.match(UX,/Copy link/);
   Assert.match(UX,/Save view/);
-  Assert.match(UX,/Best-time planner/);
+  const Insights=await readFile(new URL("../assets/insights.mjs",import.meta.url),"utf8");
+  Assert.match(Insights,/Best observed hour/);
   Assert.match(Matchlab,/Unknown \/ not reported/);
   Assert.match(Matchlab,/Load_Country_Directory/);
   Assert.match(Matchlab,/Toggle_Pause/);

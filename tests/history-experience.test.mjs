@@ -5,7 +5,7 @@ import {
   Get_Country_Time_Zones, Get_Country_Local_Hour, Format_Country_Clock,
 } from "../assets/country-timezones.mjs";
 import {
-  Summarize_Country_Series, Build_Hourly_Experience,
+  Summarize_Country_Series, Summarize_Daily_History, Build_Hourly_Experience,
 } from "../assets/history-analytics.mjs";
 import { Gender_Presets, Calculate_Gender_Scenario } from "../assets/country-metrics-utils.mjs";
 
@@ -52,6 +52,29 @@ Test("history statistics preserve every observed point and expose gaps",()=>{
   Assert.equal(Summarize_Country_Series([],1,Now).Count,0);
 });
 
+Test("daily history groups local dates through DST and preserves unobserved dates and zeroes",()=>{
+  const At=(Value)=>Date.parse(Value)/1000;
+  const Now=At("2026-11-03T18:00:00Z");
+  const Stats=Summarize_Country_Series([
+    {t:At("2026-11-01T03:45:00Z"),Count:0}, // Oct 31 in New York
+    {t:At("2026-11-01T05:30:00Z"),Count:10}, // both occurrences of 1:30 AM
+    {t:At("2026-11-01T06:30:00Z"),Count:30},
+    {t:Now,Count:5},
+  ],3,Now);
+  const Local=Summarize_Daily_History(Stats,"America/New_York");
+  Assert.deepEqual(Local.map(({Date:Day,Min,Max,Average,Readings})=>
+    [new Date(Day).toISOString().slice(0,10),Min,Max,Average,Readings]),[
+    ["2026-10-31",0,0,0,1],
+    ["2026-11-01",10,30,20,2],
+    ["2026-11-02",null,null,null,0],
+    ["2026-11-03",5,5,5,1],
+  ]);
+  const Utc=Summarize_Daily_History(Stats,"UTC");
+  Assert.equal(Utc[0].Readings,0);
+  Assert.equal(Utc[1].Readings,3);
+  Assert.equal(Utc[1].Average,13);
+});
+
 Test("best-hours view shows observed bins but withholds confident ranking on sparse history",()=>{
   const Now=Math.floor(Date.parse("2026-10-22T15:00:00Z")/1000);
   const Sparse=[{t:Now-3600,Count:7000},{t:Now-1800,Count:7200}];
@@ -61,6 +84,18 @@ Test("best-hours view shows observed bins but withholds confident ranking on spa
   Assert.ok(Data.Hours.some((Entry)=>Entry.Sample_Count>0));
   Assert.equal(Data.Hours.reduce((Total,Entry)=>Total+Entry.Sample_Count,0),2);
   Assert.equal(Data.Now_Hour,18);
+});
+
+Test("hourly views use each observation's historical offset, including a DST fold and fractional zones",()=>{
+  const Sample=(ISO)=>({t:Date.parse(ISO)/1000,Count:10});
+  const Samples=[Sample("2026-11-01T05:45:00Z"),Sample("2026-11-01T06:45:00Z")];
+  const Now=Samples[1].t;
+  const Country=Build_Hourly_Experience(Samples,"America/New_York","all",Now);
+  const Viewer=Build_Hourly_Experience(Samples,"Asia/Kolkata","all",Now);
+  Assert.equal(Country.Hours[1].Sample_Count,2);
+  Assert.equal(Country.Hours[1].Distinct_Days,1);
+  Assert.equal(Viewer.Hours[11].Sample_Count,1);
+  Assert.equal(Viewer.Hours[12].Sample_Count,1);
 });
 
 Test("weekday and weekend patterns are grouped by selected country timezone",()=>{

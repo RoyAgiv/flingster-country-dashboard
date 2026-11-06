@@ -1,14 +1,25 @@
-import { Summarize_Country_Series, Build_Hourly_Experience } from "./history-analytics.mjs";
+import { Summarize_Country_Series, Summarize_Daily_History, Build_Hourly_Experience } from "./history-analytics.mjs";
 import { Format_Country_Clock, Get_Country_Time_Zones } from "./country-timezones.mjs";
 
 const Number_Format = new Intl.NumberFormat("en-US");
-const Month_Day_Time = (Timestamp, Zone) => new Intl.DateTimeFormat("en-US",{
-  timeZone:Zone,month:"short",day:"numeric",hour:"numeric",minute:"2-digit",
-}).format(new Date(Timestamp*1000));
-const Full_Time = (Timestamp, Zone) => new Intl.DateTimeFormat("en-US",{
-  timeZone:Zone,weekday:"short",month:"short",day:"numeric",year:"numeric",
+// Reuse the active zone's formatters while exporting or inspecting many points.
+function History_Time_Formatter(Options) {
+  let Last_Zone, Formatter;
+  return (Timestamp,Zone)=>{
+    if(Zone!==Last_Zone || !Formatter){
+      Formatter=new Intl.DateTimeFormat("en-US",{...Options,timeZone:Zone});
+      Last_Zone=Zone;
+    }
+    return Formatter.format(Timestamp*1000);
+  };
+}
+const Month_Day_Time = History_Time_Formatter({
+  month:"short",day:"numeric",hour:"numeric",minute:"2-digit",
+});
+const Full_Time = History_Time_Formatter({
+  weekday:"short",month:"short",day:"numeric",year:"numeric",
   hour:"numeric",minute:"2-digit",timeZoneName:"short",
-}).format(new Date(Timestamp*1000));
+});
 
 function Svg_Element(Name, Attributes = {}) {
   const Item = document.createElementNS("http://www.w3.org/2000/svg",Name);
@@ -22,7 +33,7 @@ function Html_Element(Name, Class_Name = "", Text_Value = "") {
   return Item;
 }
 function Signed_Change(Difference, Before) {
-  if(Difference===null || Difference===undefined)return "First saved reading";
+  if(Difference===null || Difference===undefined)return "First reading in range";
   return (Difference>0?"+":"") + Number_Format.format(Difference) +
     (Before>0?" ("+(Difference>0?"+":"")+(Difference/Before*100).toFixed(1)+"%)":"")+
     " since previous reading";
@@ -79,20 +90,101 @@ export function Refresh_Country_Clocks(Container) {
   }
 }
 
+function Render_Daily_History(Stats,Zone) {
+  const Scroll=Html_Element("div","History_Daily_Scroll");
+  const Date_Format=new Intl.DateTimeFormat("en-US",{timeZone:"UTC",month:"short",day:"numeric"});
+  const Table=Html_Element("table","History_Daily_Table");
+  Table.setAttribute("aria-label","Saved activity by day in "+Zone);
+  const Head=Table.createTHead().insertRow();
+  for(const Label of ["Date","Observed range","Average","Readings"]){
+    const Cell=Html_Element("th","",Label);
+    Cell.scope="col";Head.append(Cell);
+  }
+  const Body=Table.createTBody();
+  const Scale=(Value)=>Stats.Min===Stats.Max?50:100*(Value-Stats.Min)/(Stats.Max-Stats.Min);
+  for(const Day of Summarize_Daily_History(Stats,Zone).reverse()){
+    const Row=Body.insertRow();
+    const Date_Cell=Html_Element("th","",Date_Format.format(Day.Date));
+    Date_Cell.scope="row";Row.append(Date_Cell);
+    const Range=Row.insertCell();
+    if(Day.Readings){
+      Range.textContent=Day.Min===Day.Max?Number_Format.format(Day.Min):
+        Number_Format.format(Day.Min)+"–"+Number_Format.format(Day.Max);
+      const Track=Html_Element("span","History_Daily_Track");
+      Track.setAttribute("aria-hidden","true");
+      const Band=Html_Element("span","History_Daily_Band");
+      Band.style.left=Scale(Day.Min)+"%";
+      Band.style.width=(Scale(Day.Max)-Scale(Day.Min))+"%";
+      const Mean=Html_Element("span","History_Daily_Mean");
+      Mean.style.left=Scale(Day.Average)+"%";
+      Track.append(Band,Mean);Range.append(Track);
+    }else{
+      Range.textContent="No readings";Row.className="History_Daily_Missing";
+    }
+    Row.insertCell().textContent=Day.Average===null?"—":Number_Format.format(Day.Average);
+    Row.insertCell().textContent=Number_Format.format(Day.Readings);
+  }
+  Scroll.tabIndex=0;
+  Scroll.setAttribute("role","region");
+  Scroll.setAttribute("aria-label","Daily history, newest first");
+  Scroll.append(Table);
+  return Scroll;
+}
+
 export function Render_Interactive_History({
   Container,Labels,Samples,Country_Code,Pool,Zone,Days,
 }) {
-  const Previous_Open=Container.parentElement.querySelector(".History_Readings_Details")?.open||false;
-  Container.parentElement.querySelector(".History_Explorer_Extra")?.remove();
+  const Stats=Summarize_Country_Series(Samples,Days);
+  const Parent=Container.parentElement;
+  const Previous_Open=Parent.querySelector(".History_Readings_Details")?.open||false;
+  const View_Key=String(Days);
+  const Initial_View=Container.dataset.period===View_Key?Container.dataset.historyView:null;
+  Container.dataset.period=View_Key;
+  Parent.querySelector(".History_Explorer_Extra")?.remove();
   Container.replaceChildren();
   Labels.replaceChildren();
-  const Stats=Summarize_Country_Series(Samples,Days);
+  if(!Stats.Count){
+    Container.append(Html_Element("div","History_Empty","No saved readings in this time range."));
+    return Stats;
+  }
+  const Tools=Html_Element("div","History_View_Tools");
+  const Switch=Html_Element("div","History_View_Switch");
+  Switch.setAttribute("role","group");Switch.setAttribute("aria-label","History view");
+  const Daily=Html_Element("button","","Daily summary");
+  const Readings=Html_Element("button","","Individual readings");
+  const Export=Html_Element("button","History_Export","Download history CSV");
+  for(const Button of [Daily,Readings,Export])Button.type="button";
+  Switch.append(Daily,Readings);Tools.append(Switch,Export);
+  Export.addEventListener("click",()=>Export_Country_History(Stats.Points,Country_Code,Pool,Zone));
+  const Panel=Html_Element("div","History_View_Panel");
+  Container.append(Tools,Panel);
+  function Show_View(View){
+    Container.dataset.historyView=View;
+    Daily.setAttribute("aria-pressed",String(View==="daily"));
+    Readings.setAttribute("aria-pressed",String(View==="readings"));
+    Parent.querySelector(".History_Explorer_Extra")?.remove();
+    Labels.replaceChildren();
+    Panel.replaceChildren();
+    if(View==="daily"){
+      Panel.append(Render_Daily_History(Stats,Zone));
+      Labels.append(Html_Element("div","History_Axis_Caption",
+        "Range and average of saved readings · "+Zone.replaceAll("_"," ")));
+    }else{
+      Render_Reading_History({Container:Panel,Parent,Labels,Stats,Country_Code,Zone,Previous_Open});
+    }
+  }
+  Daily.addEventListener("click",()=>Show_View("daily"));
+  Readings.addEventListener("click",()=>Show_View("readings"));
+  Show_View(Initial_View||(Days>1?"daily":"readings"));
+  return Stats;
+}
+
+function Render_Reading_History({Container,Parent,Labels,Stats,Country_Code,Zone,Previous_Open}){
   const Box=Html_Element("div","History_Chart_Stage");
   const Metrics=Html_Element("div","History_Summary_Metrics");
   const Focus=Html_Element("div","History_Focus_Row");
   const Foot=Html_Element("div","History_Explorer_Extra");
   Foot.append(Metrics,Focus);
-  const First=Stats.First;
   const Latest=Stats.Latest;
   function Metric(Label,Value,Detail="") {
     const Card=Html_Element("div","History_Mini_Metric");
@@ -104,23 +196,18 @@ export function Render_Interactive_History({
     Latest?Month_Day_Time(Latest.t,Zone):"No reading");
   Metric("Change vs previous",Stats.Latest_Difference===null?"—":
     (Stats.Latest_Difference>0?"+":"")+Number_Format.format(Stats.Latest_Difference),
-    Stats.Latest_Percent===null?"Waiting for another reading":
+    Stats.Latest_Percent===null?(Stats.Previous?"Previous reading was zero":"First reading in range"):
       (Stats.Latest_Percent>0?"+":"")+Stats.Latest_Percent.toFixed(1)+"%");
   Metric("Observed range",Stats.Count>1?
     Number_Format.format(Stats.Min)+"–"+Number_Format.format(Stats.Max):"—",
     Stats.Count>1?"From saved observations":"Insufficient history");
-  if(!Stats.Points.length){
-    Box.append(Html_Element("div","History_Empty","No saved readings in this time range."));
-    Container.append(Box);Container.parentElement.append(Foot);
-    return Stats;
-  }
   if(Stats.Points.length===1){
     Box.append(Html_Element("div","History_Empty", "One recorded point: "+
       Number_Format.format(Stats.Points[0].Count)+" at "+Full_Time(Stats.Points[0].t,Zone)+
       ". More observations are needed for a trend."));
     Container.append(Box);
     Focus.textContent="First saved observation · not a trend yet";
-    Container.parentElement.append(Foot);
+    Parent.append(Foot);
     return Stats;
   }
   const Width=760,Height=255,Left=57,Right=18,Top=17,Bottom=31;
@@ -168,13 +255,16 @@ export function Render_Interactive_History({
       (Height-Bottom)+" L"+Scale_X(Segment[0]).toFixed(2)+","+
       (Height-Bottom)+" Z";
     if(Segment.length>1)Svg.append(Svg_Element("path",{d:Area,class:"History_Area",fill:"url(#History_Gradient)"}));
-    Svg.append(Svg_Element("path",{d:Line,class:"History_Line",fill:"none"}));
+    if(Segment.length===1){
+      Svg.append(Svg_Element("circle",{cx:Scale_X(Segment[0]),cy:Scale_Y(Segment[0]),r:3,fill:"#6eebd8"}));
+    }else{
+      Svg.append(Svg_Element("path",{d:Line,class:"History_Line",fill:"none"}));
+    }
   }
   for(let Index=1;Index<Groups.length;Index++){
-    const Earlier=Groups[Index-1].at(-1);
-    const Later=Groups[Index][0];
-    Svg.append(Svg_Element("line",{
-      x1:Scale_X(Earlier),y1:Scale_Y(Earlier),x2:Scale_X(Later),y2:Scale_Y(Later),
+    const Start=Scale_X(Groups[Index-1].at(-1));
+    const End=Scale_X(Groups[Index][0]);
+    Svg.append(Svg_Element("rect",{x:Start,y:Top,width:End-Start,height:Height-Top-Bottom,
       class:"History_Missing_Gap",
     }));
   }
@@ -191,7 +281,7 @@ export function Render_Interactive_History({
   Tip.hidden=true;Box.append(Tip);
   Container.append(Box);
   const Meta=Html_Element("div","History_Axis_Caption",
-    "Saved observations · auto-scaled y-axis · dashed lines = missing snapshots");
+    "Saved observations · auto-scaled y-axis"+(Stats.Gaps_Count?" · shaded gaps exceed 90 minutes":""));
   Labels.append(Meta);
   let Selected_Index=Stats.Points.length-1;
   function Select_Point(Index,Show_Tooltip=true){
@@ -245,10 +335,6 @@ export function Render_Interactive_History({
   Details.open=Previous_Open;
   const Header=Html_Element("summary","",Stats.Points.length+" saved readings · inspect values");
   const Actions=Html_Element("div","History_Readings_Actions");
-  const Export=Html_Element("button","Secondary_Button","Download history CSV");
-  Export.type="button";
-  Export.addEventListener("click",()=>Export_Country_History(Stats.Points,Country_Code,Pool,Zone));
-  Actions.append(Export);
   const List=Html_Element("div","History_Readings_List");
   function Fill_List(Count=15){
     List.replaceChildren();
@@ -275,9 +361,11 @@ export function Render_Interactive_History({
     More.type="button";More.addEventListener("click",()=>{Fill_List(Stats.Points.length);More.hidden=true;});
     Actions.append(More);
   }
-  Details.append(Header,Actions,List);
+  Details.append(Header);
+  if(Actions.childElementCount)Details.append(Actions);
+  Details.append(List);
   Foot.append(Details);
-  Container.parentElement.append(Foot);
+  Parent.append(Foot);
   const Gap_Message=Stats.Gaps_Count?
     Stats.Gaps_Count+" collection gap"+(Stats.Gaps_Count===1?"":"s")+" (>90 minutes)":
     "No long gaps between saved readings";
