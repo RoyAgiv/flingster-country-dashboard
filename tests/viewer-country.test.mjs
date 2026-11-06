@@ -36,6 +36,9 @@ test("card follows the connection, respects manual choices and opens the display
   window.addEventListener("countrypulse:open-country", event=>{ opened=event.detail.Code; });
   card.updateReading([{Code:"JP",Count:10},{Code:"US",Count:0}], 10);
   assert.ok(open.disabled);
+  card.updateHistory([{c:{OM:4}, rooms:{Default:{c:{QA:1}}}}]);
+  assert.ok(choice.children.some(option=>option.value === "QA"));
+  assert.ok(choice.children.some(option=>option.value === "OM"));
   card.reportCountry("jp");
   assert.match(nodes.get("Viewer_Reading").textContent, /10 online/);
   open.dispatchEvent(new Event("click"));

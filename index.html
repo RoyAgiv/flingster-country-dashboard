@@ -318,7 +318,13 @@
       Refresh_Button.disabled = false;
       Fetch_State = "error";
       Last_Error_Text = Message;
-      if(Data_Mode==="live")Data_Mode="previous";
+      if(Data_Mode==="live"){
+        Data_Mode="previous";
+        if(window.CountryPulse_Data){
+          window.CountryPulse_Data.Observation_Mode=Data_Mode;
+          window.dispatchEvent(new CustomEvent("countrypulse:data",{detail:window.CountryPulse_Data}));
+        }
+      }
       if(!Country_Rows.length)Apply_Saved_For_Room();
       Retry_Attempts++;
       if(Retry_Handle)clearTimeout(Retry_Handle);
@@ -641,6 +647,7 @@
     window.addEventListener("countrypulse:history",Event=>{
       const History=Event.detail?.Historical_Snapshots||[];
       Saved_History=Array.isArray(History)?History:[];
+      Viewer_Card.updateHistory(Saved_History);
       if(Data_Mode!=="live")Apply_Saved_For_Room();
       if(Country_Rows.length){Render_Table();Render_Observation_UI();}
       else Render_Collection_Health();

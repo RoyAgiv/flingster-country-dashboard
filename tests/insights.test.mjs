@@ -65,5 +65,6 @@ Test("current live value cannot exceed the displayed highest observed", () => {
   Assert.equal(Calculate_Observed_Peak(11901, 11336), 11901);
   Assert.equal(Calculate_Observed_Peak(10000, 11336), 11336);
   Assert.equal(Calculate_Observed_Peak(11901, null), 11901);
+  Assert.equal(Calculate_Observed_Peak(undefined, 0), 0);
   Assert.equal(Calculate_Observed_Peak(undefined, undefined), null);
 });

@@ -17,12 +17,13 @@ export function Setup_Viewer_Card(countryName, countryFlag) {
   const label = document.getElementById("Viewer_Label");
   const numbers = new Intl.NumberFormat("en-US");
   let detected = null, manual = null, rows = [], total = 0;
+  let historicalCodes = new Set();
   try { manual = Visitor_Code(localStorage.getItem(Choice_Key)); } catch {}
 
   function render() {
     const code = manual || detected;
     const row = rows.find(item => item.Code === code);
-    const codes = new Set(rows.map(item => item.Code));
+    const codes = new Set([...historicalCodes, ...rows.map(item => item.Code)]);
     if (code) codes.add(code);
     const list = [...codes].sort();
     if (choice.dataset.codes !== list.join(",")) {
@@ -34,7 +35,7 @@ export function Setup_Viewer_Card(countryName, countryFlag) {
     choice.value = manual || "";
     choice.disabled = !list.length;
     label.textContent = manual ? "Selected country" : "Your country";
-    name.textContent = code ? countryFlag(code) + " " + countryName(code) : rows.length ? "Choose a country" : "Locating…";
+    name.textContent = code ? countryFlag(code) + " " + countryName(code) : list.length ? "Choose a country" : "Locating…";
     reading.textContent = row ? numbers.format(row.Count) + " online · " +
       (row.Count / total * 100).toFixed(1) + "% of pool" :
       !rows.length ? "Waiting for a reading" : code ? "No count in this pool" : "Location unavailable";
@@ -60,6 +61,15 @@ export function Setup_Viewer_Card(countryName, countryFlag) {
     reportCountry(value) {
       const code = Visitor_Code(value);
       if (code && code !== detected) { detected = code; render(); }
+    },
+    updateHistory(snapshots) {
+      historicalCodes = new Set();
+      for (const snapshot of snapshots) {
+        for (const pool of [snapshot, snapshot.rooms?.Default, snapshot.rooms?.Combined]) {
+          for (const code of Object.keys(pool?.c || {})) historicalCodes.add(code);
+        }
+      }
+      render();
     },
     updateReading(nextRows, nextTotal) {
       rows = nextRows;

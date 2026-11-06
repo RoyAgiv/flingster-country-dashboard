@@ -193,7 +193,7 @@ function Render_Country() {
   Set_Text("Insight_Average", Insight.Average_Count === null ? "—" : Format_Number.format(Insight.Average_Count));
   // A live reading can exceed the most recently saved high; show a comparable peak.
   const Peak_With_Live = Calculate_Observed_Peak(Country?.Count, Insight.Maximum_Count);
-  Set_Text("Insight_Peak", Peak_With_Live > 0 ? Format_Number.format(Peak_With_Live) : "—");
+  Set_Text("Insight_Peak", Peak_With_Live === null ? "—" : Format_Number.format(Peak_With_Live));
   document.getElementById("Insight_Peak").dataset.livePeak =
     String(Country && Country.Count >= (Insight.Maximum_Count ?? 0));
   const Peak_Foot = document.getElementById("Insight_Peak").closest(".Insight_Stat")
