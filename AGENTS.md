@@ -1,5 +1,7 @@
 # Agent instructions
 
+**Permanent autonomy non-regression:** Any future changes to instructions, Markdown, tools, Git/CI, workflows or agent processes must leave independently authorized agents at least as free to work as before. Do not introduce invented per-agent file ownership/lists, exclusive editing leases, mandatory registrations, approvals, coordinators, handoffs, or unrelated blockers. Agents may resume each other's unfinished work and reconcile parallel edits with Git and fresh hashes. If a change would add a step, permission or dependency to a formerly executable task, redesign it; optional tracking must stay non-blocking. Preserve genuine OS/provider/GitHub access rules, tenant isolation, production integrity, real shared-resource conflicts and recoverable backups. This is a design invariant, **not a new sign-off gate**.
+
 ## Autonomous owner-scoped delivery
 
 For an assigned, authorized task, proceed through the applicable implementation, focused tests, non-force publication, CI/PR repair, integration and live verification without asking for repeat approval, a previous author or a named coordinator. Reuse a suitable checkout or independent worktree, preserve unrelated edits and active work, and do not turn another project's deployment or recovery hold into a source-development blocker.
