@@ -36,8 +36,7 @@ function Create_Quick_Navigation() {
   Nav.id="Quick_Nav";
   Nav.setAttribute("aria-label","CountryPulse sections");
   const Links = Element("div","Quick_Nav_Links");
-  for (const [Id,Text] of [["countries","Countries"],["trends","Trends"],["Network_Explorer","Networks"],
-    ["Country_Compare","Compare"],["MatchLab","MatchLab"],["More_Data","Sources"]]) {
+  function Navigation_Link(Id, Text) {
     const Link = Element("a","Quick_Nav_Link",Text);
     Link.href=Initial_Href(Id);
     Link.addEventListener("click",(Event_Object)=>{
@@ -46,9 +45,22 @@ function Create_Quick_Navigation() {
       Event_Object.preventDefault();
       if(Target instanceof HTMLDetailsElement)Target.open=true;
       Target.scrollIntoView({behavior:"smooth",block:"start"});
+      const Menu=Link.closest(".Quick_Nav_More");
+      if(Menu)Menu.open=false;
     });
-    Links.append(Link);
+    return Link;
   }
+  for(const [Id,Text] of [["world","Overview"],["countries","Countries"],["trends","Trends"],["Country_Compare","Compare"]]){
+    Links.append(Navigation_Link(Id,Text));
+  }
+  const More=Element("details","Quick_Nav_More");
+  const More_Summary=Element("summary","Quick_Nav_Link","More");
+  const More_Items=Element("div","Quick_Nav_More_Items");
+  for(const [Id,Text] of [["Network_Explorer","Networks"],["MatchLab","MatchLab"],["More_Data","Sources"]]){
+    More_Items.append(Navigation_Link(Id,Text));
+  }
+  More.append(More_Summary,More_Items);
+  Links.append(More);
   const Right = Element("div","Quick_Nav_Right");
   const Quick_Search = Element("input","Quick_Search");
   Quick_Search.id="Quick_Search";

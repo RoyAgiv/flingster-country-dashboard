@@ -291,7 +291,7 @@ function Update_History_Status() {
 
 async function Load_History() {
   try {
-    const Response = await fetch(Historical_Url + "?v=" + Date.now(), { cache: "no-store" });
+    const Response = await fetch(Historical_Url, { cache: "no-cache" });
     if (!Response.ok) throw new Error("History returned HTTP " + Response.status);
     const Payload = await Response.json();
     if (!Payload || Payload.schema !== 1 || !Array.isArray(Payload.snapshots)) throw new Error("Unexpected data format");
@@ -308,6 +308,7 @@ async function Load_History() {
     const Element = document.getElementById("History_Coverage");
     Element.textContent = Historical_Snapshots.length ? "Showing previous history · refresh later" :
       "History temporarily unavailable · live counts still work";
+    window.dispatchEvent(new CustomEvent("countrypulse:history-failed"));
   }
 }
 
@@ -469,6 +470,7 @@ function Create_Interface() {
     if (Selected_Country_Code) Render_Country();
   });
   Render_Favorites();
+  window.addEventListener("countrypulse:reload-history", Load_History);
   Load_History();
   setInterval(() => { if (!document.hidden) Load_History(); }, 10 * 60 * 1000);
 }

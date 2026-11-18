@@ -4,6 +4,14 @@
 
 CountryPulse is a lightweight, searchable dashboard for activity **reported** by public Flingster-hosted endpoints. It is not affiliated with Flingster or DirtyRoulette, and reported numbers should not be represented as independently verified unique users.
 
+## Worldwide activity timeline (November 2026)
+
+The **Worldwide activity over time** panel sits below the summary cards and exposes actual observation timestamps for the chosen technical pool over **24 hours, 7 days or 30 days**. The chart disconnects observations separated by more than 90 minutes instead of drawing invented intermediate values. Its three KPI fields report the latest observed count, change between recorded endpoints and approximate sampling coverage relative to scheduled half-hour readings; partial coverage is explicitly shown. Live observations, when available, have a separate marker. Use the keyboard-accessible range control to inspect readings or export the selected observed points as CSV, retaining their pool and saved/live provenance.
+
+The top navigation prioritizes Overview, Countries, Trends and Compare, with Networks, MatchLab and Sources in a **More** menu. On narrow phones the country table shows its primary three columns; the full details remain available in each country and in CSV export. Network history (about 2 MiB in November 2026) is requested only when Network Explorer is opened. The history and population requests allow conditional HTTP cache validation instead of forcing a fresh full transfer on every page load.
+
+**Regression checks:** run `node --test tests/*.test.mjs` for deterministic tests. Run `npm install --no-save --no-package-lock playwright@1.57.0`, `npx playwright install chromium`, and `node scripts/browser-smoke.mjs` to run the independent local-fixture browser smoke test. GitHub Actions runs both suites on user-facing code changes; 30-minute historical data-only commits do not trigger the browser suite.
+
 ## Dashboard
 
 - **Adult**, **Default**, or **Combined** technical pools. Adult is the pool used by both tested Flingster and DirtyRoulette pages. The Default pool's site ownership is unknown; Combined is a provider-reported query (`room=Adult,Default`), **not** an arithmetic sum or verified distinct-user total.

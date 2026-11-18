@@ -1,0 +1,65 @@
+/* Global activity: time context first, with faithful gaps and keyboard scrubbing. */
+.World_Pulse{margin:0 0 18px;padding:23px 25px 21px;overflow:hidden;border-color:#315562;background:linear-gradient(135deg,rgba(25,53,66,.97),rgba(12,27,42,.97) 65%)}
+.World_Header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.World_Intro{min-width:0;flex:1}
+.World_Kicker{color:#7cddcb;font-size:10px;font-weight:850;letter-spacing:.15em}
+.World_Header h2{font-size:22px;line-height:1.25;margin:6px 0 4px;letter-spacing:-.045em}
+.World_Header .Subheading{font-size:12px;line-height:1.5;color:#b0c5cf}
+.World_Ranges{display:flex;align-items:center;gap:3px;border:1px solid #3b6170;background:#0c2130;border-radius:10px;padding:4px}
+.World_Ranges button{color:#bdd3d9;border:0;background:transparent;border-radius:7px;padding:9px 11px;font-size:12px;font-weight:800;min-height:37px;white-space:nowrap}
+.World_Ranges button:hover{background:#254451;color:#e1fffa}
+.World_Ranges button[aria-pressed=true]{background:#2b555b;color:#baffec;box-shadow:inset 0 0 0 1px #457c7c}
+.World_Ranges button:focus-visible,.World_Foot button:focus-visible{outline:2px solid #99ffee;outline-offset:2px}
+.World_Summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0 13px}
+.World_Summary>div{border:1px solid rgba(95,143,154,.35);background:rgba(7,23,34,.53);border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.World_Summary span{font-size:11px;font-weight:700;color:#a5c5d0}
+.World_Summary strong{font-size:clamp(19px,2vw,26px);line-height:1.3;letter-spacing:-.035em;font-variant-numeric:tabular-nums;color:#ddfff6}
+.World_Summary strong[data-direction=down]{color:#ffb8ad}
+.World_Summary strong[data-direction=up]{color:#9cf1ce}
+.World_Summary small{font-size:11px;line-height:1.5;color:#a0b9c5;overflow-wrap:anywhere}
+.World_Graph_Area{border:1px solid rgba(85,130,142,.38);background:#0b1c2b;border-radius:13px;padding:13px 14px 15px}
+.World_Graph_Bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#bcd6db;font-size:11px;line-height:1.5}
+.World_Legend{display:flex;align-items:center;gap:7px;color:#9bb9c4}
+.World_Legend i{width:10px;height:10px;border-radius:2px;background:#55cbbb;display:inline-block}
+.World_Legend i.Live{border-radius:50%;background:#f4c877;margin-left:8px}
+#World_Chart{display:block;width:100%;height:clamp(155px,22vw,250px);margin:7px 0 3px;overflow:visible;touch-action:pan-y}
+#World_Chart[hidden],.World_Empty[hidden],#World_Retry[hidden]{display:none!important}
+.World_Gridline{stroke:#2b4754;stroke-width:1;stroke-dasharray:5 6}
+.World_Y_Label,.World_X_Label{fill:#9bb9c6;font-size:14px;letter-spacing:.01em}
+.World_Line{fill:none;stroke:#5bdfd0;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.World_Gap{fill:rgba(231,178,102,.075)}
+.World_Live_Marker{fill:#f9cb74;stroke:#0e2431;stroke-width:2}
+.World_Selected_Marker{fill:#a6fff0;stroke:#12565d;stroke-width:3;pointer-events:none}
+.World_Scrub{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:center;padding:5px 8px 0}
+.World_Scrub label{color:#a3c0cd;font-weight:700;font-size:11px}
+.World_Scrub input{width:100%;min-width:0;accent-color:#69daca;cursor:pointer}
+.World_Scrub input:focus-visible{outline:2px solid #97f1e6;outline-offset:4px;border-radius:4px}
+.World_Scrub output{grid-column:1/-1;display:block;border-radius:8px;background:#17313c;color:#e0f9f4;font-size:12px;padding:8px 10px;font-variant-numeric:tabular-nums}
+.World_Empty{padding:45px 14px;text-align:center;color:#bad1db;font-size:13px;line-height:1.6}
+.World_Foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:11px;flex-wrap:wrap}
+.World_Foot p{max-width:750px;margin:0;font-size:11px;color:#a5bbc8;line-height:1.7}
+.World_Foot_Actions{display:flex;gap:8px;margin-left:auto}
+.World_Foot button{white-space:nowrap;min-height:36px}
+@media(max-width:720px){
+  .World_Pulse{padding:17px 15px;margin-bottom:14px}
+  .World_Header h2{font-size:20px}
+  .World_Ranges{width:100%;justify-content:stretch}
+  .World_Ranges button{flex:1;padding:9px 5px}
+  .World_Summary{gap:7px;margin-top:12px}
+  .World_Summary>div{padding:10px}
+  .World_Summary span,.World_Summary small{font-size:10px}
+  .World_Summary strong{font-size:20px}
+  .World_Graph_Area{padding:10px 8px 12px}
+  .World_Graph_Bar{gap:5px}
+  .World_Scrub{grid-template-columns:1fr;gap:6px}
+  .World_Scrub output{grid-column:1}
+}
+@media(max-width:490px){
+  .World_Summary{grid-template-columns:1fr 1fr}
+  .World_Summary>div:first-child{grid-column:1/-1}
+  .World_Summary small{font-size:11px}
+  .World_Summary>div:first-child strong{font-size:28px}
+  .World_Legend{font-size:10px}
+  .World_Foot button{width:100%}
+  .World_Foot_Actions{width:100%;flex-direction:column}
+}
