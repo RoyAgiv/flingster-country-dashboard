@@ -6,6 +6,8 @@ import {
 const Number_Formatter = new Intl.NumberFormat("en-US");
 const Explorer = document.createElement("details");
 let Network_Document = null;
+let Last_Network_Load = 0;
+let Network_Loading = false;
 let Country_History = Array.isArray(window.CountryPulse_History) ? window.CountryPulse_History : [];
 let Selected_Pool = "default";
 
@@ -278,19 +280,24 @@ function Render_Network() {
 }
 
 async function Load_Network_Data() {
+  if (Network_Loading || (Network_Document && Date.now()-Last_Network_Load < 10 * 60 * 1000)) return;
+  Network_Loading = true;
   try {
-    const Response = await fetch("./data/network.json?v="+Date.now(),{cache:"no-store"});
+    const Response = await fetch("./data/network.json",{cache:"no-cache"});
     if (!Response.ok) throw Error("HTTP "+Response.status);
     const Data = await Response.json();
     if (Data.schema!==1 || !Array.isArray(Data.snapshots) ||
         !Array.isArray(Data.config_history)) throw Error("Unexpected data format");
     Network_Document=Data;
+    Last_Network_Load=Date.now();
     Render_Network();
   } catch (Error_Object) {
     document.getElementById("Network_Preview").textContent="History unavailable";
     document.getElementById("Network_Status").textContent="Could not read saved network snapshots";
     document.getElementById("Network_Exact_Groups").replaceChildren(
       Make_Element("div","Network_Empty","Network data is temporarily unavailable. Main country data still works."));
+  } finally {
+    Network_Loading = false;
   }
 }
 
@@ -301,7 +308,7 @@ function Setup_Network_Explorer() {
     '<summary><span class="Network_Title_Group"><span class="Network_Icon" aria-hidden="true">◎</span>'+
     '<span><span class="Network_Name">Network Explorer</span>'+
     '<span class="Network_Subtitle">Seven brands, potentially shared activity · compare without double-counting</span></span></span>'+
-    '<span class="Network_Preview" id="Network_Preview">Loading verified feeds…</span></summary>'+
+    '<span class="Network_Preview" id="Network_Preview">Open to load network history</span></summary>'+
     '<div class="Network_Content">'+
       '<div class="Network_Notice"><i aria-hidden="true">ⓘ</i><span>These are <strong>provider-reported activity snapshots, not separate populations.</strong> Brands can share backend statistics. Never add their totals or member counters to estimate unique people.</span></div>'+
       '<div class="Network_Toolbar"><div class="Network_Tabs" id="Network_Tabs" role="radiogroup" aria-label="Network activity pool">'+
@@ -341,7 +348,6 @@ function Setup_Network_Explorer() {
   Explorer.addEventListener("toggle",()=>{
     if (Explorer.open) Load_Network_Data();
   });
-  Load_Network_Data();
   setInterval(()=>{if(!document.hidden && Explorer.open)Load_Network_Data();},10*60*1000);
 }
 Setup_Network_Explorer();

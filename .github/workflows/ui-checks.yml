@@ -1,0 +1,46 @@
+name: CountryPulse · UX regression checks
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'scripts/browser-smoke.mjs'
+      - 'tests/**'
+      - '.github/workflows/ui-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: country-pulse-ux-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run all deterministic Node tests
+        run: node --test tests/*.test.mjs
+      - name: Install isolated browser test dependency
+        run: npm install --no-save --no-package-lock playwright@1.57.0
+      - name: Install Chromium and required Linux dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Exercise static dashboard with local fixtures and responsive viewports
+        run: node scripts/browser-smoke.mjs
+      - name: Preserve responsive screenshots for investigation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countrypulse-ui-screenshots
+          path: smoke-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

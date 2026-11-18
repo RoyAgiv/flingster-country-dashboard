@@ -140,7 +140,7 @@ function Update_Country_Extras() {
 
 async function Load_Population_Data() {
   try {
-    const Response = await fetch("./data/population.json?v=" + Date.now(), {cache:"no-store"});
+    const Response = await fetch("./data/population.json", {cache:"no-cache"});
     if (!Response.ok) throw new Error("HTTP " + Response.status);
     const Result = await Response.json();
     if (Result.schema !== 1 || !Result.by_country ||

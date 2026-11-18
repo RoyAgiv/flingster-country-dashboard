@@ -115,3 +115,40 @@
 .Viewer_Change select{position:absolute;inset:0;width:100%;height:100%;min-height:0;opacity:0;cursor:pointer}
 @media(max-width:620px){.Viewer_Open{padding:14px 11px;min-height:110px}.Viewer_Change{top:3px;right:3px}.Viewer_Reading{font-size:11px}.Viewer_Kicker{font-size:9px}}
 .Viewer_Card:has(.Viewer_Open:disabled) .Viewer_Change{inset:0;text-align:right;background:transparent;padding:8px 13px}
+
+
+/* Keep four primary tasks visible, and move advanced tools behind one menu. */
+.Quick_Nav_Links{overflow:visible;flex-wrap:wrap}
+.Quick_Nav_More{position:relative}
+.Quick_Nav_More summary{list-style:none;cursor:pointer;user-select:none}
+.Quick_Nav_More summary::-webkit-details-marker{display:none}
+.Quick_Nav_More summary:after{content:" ▾";font-size:10px;opacity:.8}
+.Quick_Nav_More[open] summary{background:#244554;color:#a9ffea}
+.Quick_Nav_More_Items{position:absolute;left:0;top:calc(100% + 5px);z-index:70;display:grid;gap:3px;min-width:145px;border:1px solid #375969;background:#122938;padding:6px;border-radius:11px;box-shadow:0 16px 30px #0007}
+.Quick_Nav_More_Items .Quick_Nav_Link{display:block;width:100%;padding:9px 11px}
+.Quick_Nav_More summary:focus-visible{outline:2px solid #a4ffe7;outline-offset:2px}
+#world{scroll-margin-top:100px}
+#countries tr[data-country-code]:focus-visible{outline:2px solid #9dece0;outline-offset:-3px;background:rgba(70,148,153,.18)}
+@media(max-width:620px){
+ .Quick_Nav{padding:6px 0;row-gap:5px}
+ .Quick_Nav_Links{gap:1px;justify-content:space-between}
+ .Quick_Nav_Link{font-size:11px!important;padding:7px 8px!important}
+ .Quick_Nav_More_Items{left:auto;right:0}
+ #countries .Table_Scroll{max-height:540px;overflow-x:hidden}
+ #countries table{min-width:0;table-layout:fixed;width:100%}
+ #countries th:nth-child(1),#countries td:nth-child(1),
+ #countries th:nth-child(5),#countries td:nth-child(5),
+ #countries th:nth-child(6),#countries td:nth-child(6),
+ #countries th:nth-child(7),#countries td:nth-child(7){display:none}
+ #countries th:nth-child(2),#countries td:nth-child(2){width:43%}
+ #countries th:nth-child(3),#countries td:nth-child(3){width:29%}
+ #countries th:nth-child(4),#countries td:nth-child(4){width:28%}
+ #countries th,#countries td{padding:11px 6px;font-size:11px;letter-spacing:0;overflow-wrap:anywhere}
+ #countries .Table_Country{gap:5px}
+ #countries .Table_Name{font-size:12px}
+ #countries .Flag{font-size:17px}
+ #countries .Table_Code{display:none}
+ #countries th:nth-child(3),#countries td:nth-child(3){text-align:right}
+ #countries th:nth-child(4),#countries td:nth-child(4){text-align:right}
+ #countries .Table_Empty{display:table-cell}
+}
