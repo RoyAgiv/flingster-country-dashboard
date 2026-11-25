@@ -1,5 +1,7 @@
 # Agent instructions
 
+For owner-scoped engineering, apply the [canonical HYDE fleet policy and core engineering principles](https://github.com/RoyAgiv/HYDE-OS/blob/main/docs/agents/HYDE_FLEET_AGENT_POLICY.md), synchronized locally in `~/AGENTS.md`. Use these as decision-making principles, not new approval or process gates. Preserve genuine access boundaries and the project-specific requirements below.
+
 **Permanent autonomy non-regression:** Any future changes to instructions, Markdown, tools, Git/CI, workflows or agent processes must leave independently authorized agents at least as free to work as before. Do not introduce invented per-agent file ownership/lists, exclusive editing leases, mandatory registrations, approvals, coordinators, handoffs, or unrelated blockers. Agents may resume each other's unfinished work and reconcile parallel edits with Git and fresh hashes. If a change would add a step, permission or dependency to a formerly executable task, redesign it; optional tracking must stay non-blocking. Preserve genuine OS/provider/GitHub access rules, tenant isolation, production integrity, real shared-resource conflicts and recoverable backups. This is a design invariant, **not a new sign-off gate**.
 
 ## Autonomous owner-scoped delivery
