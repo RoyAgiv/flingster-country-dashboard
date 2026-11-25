@@ -74,3 +74,22 @@
 .Insight_Sample_Progress span{display:block;background:linear-gradient(90deg,#3e8e9b,#67e1c9);height:100%;width:0}
 body.Insight_Drawer_Open{overflow:hidden}
 @media(max-width:570px){.History_Strip{padding:13px 14px}.Insight_Inner{padding:22px 17px 35px}.Insight_Controls select{min-width:130px}.Insight_Stats{gap:6px}.Insight_Stat{padding:12px 9px}.Insight_Stat_Value{font-size:21px}.Insight_Hour_Grid{gap:3px}.Insight_Hour_Column label{font-size:8px}.Insight_Peak{min-width:99px}.Top_Limit_Control{font-size:11px}}
+
+/* Watchlist chips retain counts and changes; sticky country heading survives scroll. */
+.Pinned_Rows{max-width:100%;flex-wrap:wrap;overflow:visible}
+.Pinned_Row{display:inline-flex;align-items:center;gap:7px;border-radius:9px;font-weight:600}
+.Pinned_Row strong{color:#a6f3e3;font-variant-numeric:tabular-nums;font-weight:800}
+.Pinned_Row small{font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:#b7c6cc}
+.Pinned_Row small[data-direction=up]{color:#92edb7}
+.Pinned_Row small[data-direction=down]{color:#ffb5aa}
+.History_Beacon[data-status=late],.History_Beacon[data-status=delayed]{background:#edbb73;box-shadow:0 0 0 4px #edbb7320}
+.History_Beacon[data-status=unknown]{background:#7c98a5;box-shadow:none}
+.Insight_Sticky_Identity{min-width:0;display:grid;gap:3px}
+.Insight_Sticky_Identity strong{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e4f7f4}
+.Insight_Sticky_Identity small{font-size:11px;color:#a2c8ce;font-variant-numeric:tabular-nums}
+.Insight_Jump{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 17px}
+.Insight_Jump button{border:1px solid #355463;border-radius:8px;background:#142a38;color:#c7e1e4;padding:7px 11px;font-weight:650;font-size:12px;cursor:pointer}
+.Insight_Jump button:hover,.Insight_Jump button:focus-visible{background:#214b52;color:#9ff3e3;outline-offset:2px}
+.Insight_Drawer .Insight_Section{scroll-margin-top:78px}
+.Insight_Share{font-size:18px}
+@media(max-width:570px){.Insight_Sticky_Identity strong{font-size:13px}.Insight_Jump button{padding:6px 9px}.Pinned_Row{font-size:11px}.Insight_Title_Row{gap:6px}.Insight_Title_Row .Insight_Icon_Button{width:32px;height:34px;flex-shrink:0}}

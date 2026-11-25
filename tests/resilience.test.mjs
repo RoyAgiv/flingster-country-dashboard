@@ -35,6 +35,7 @@ Test("saved-history selection validates each pool independently, rejects invalid
   Assert.equal(Select_Latest_Saved_Reading([Bad,History[0]],"Adult").Timestamp,10000);
   Assert.equal(Select_Latest_Saved_Reading([Bad],"Unknown"),null);
   Assert.equal(Select_Latest_Saved_Reading([], "Adult"),null);
+  Assert.equal(Select_Latest_Saved_Reading([Make_Snapshot(20000),History[0]],"Adult",15000).Timestamp,10000);
 });
 
 Test("saved snapshot ages, retry backoff and chart states never conflate empty with failure",()=>{

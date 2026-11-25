@@ -1,4 +1,5 @@
 import { Compare_Countries } from "./reliability-utils.mjs";
+import { Setup_Quick_Search, Create_Collection_Panel, Create_Comparison_History } from "./ux-panels.mjs";
 
 const View_Key = "countrypulse-view-v1";
 const Country_Selects = [];
@@ -6,12 +7,14 @@ const Format_Number = new Intl.NumberFormat("en-US");
 const Format_Share = new Intl.NumberFormat("en-US",{maximumFractionDigits:2,minimumFractionDigits:1});
 const Search_Input = document.getElementById("Search_Input");
 const Sort_Select = document.getElementById("Sort_Select");
+const Minimum_Count = document.getElementById("Minimum_Count");
 const Selected_Region_Codes = ["US","IL"];
 let Current_Data = window.CountryPulse_Data || null;
 let Saved_History = window.CountryPulse_History || [];
 let Active_Country_Code = null;
 let Compare_Period = "recent";
 let Has_Initialized_View = false;
+let Render_Comparison_History = ()=>{};
 
 function Element(Tag_Name, Class_Name = "", Content = "") {
   const Node = document.createElement(Tag_Name);
@@ -68,28 +71,7 @@ function Create_Quick_Navigation() {
   Quick_Search.autocomplete="off";
   Quick_Search.placeholder="Find country…";
   Quick_Search.setAttribute("aria-label","Find a country");
-  Quick_Search.addEventListener("input",()=>{
-    Search_Input.value=Quick_Search.value;
-    Search_Input.dispatchEvent(new Event("input",{bubbles:true}));
-  });
-  Quick_Search.addEventListener("keydown",(Event_Object)=>{
-    if(Event_Object.key==="Enter"){
-      Event_Object.preventDefault();
-      const query = Quick_Search.value.trim().toLowerCase();
-      const rows = window.CountryPulse_Data?.Country_Rows || [];
-      const match = rows.find(row => row.Code.toLowerCase() === query || row.Name.toLowerCase() === query);
-      if (match) {
-        window.dispatchEvent(new CustomEvent("countrypulse:open-country",{detail:{Code:match.Code}}));
-        return;
-      }
-      document.getElementById("countries").scrollIntoView({behavior:"smooth",block:"start"});
-      Search_Input.focus();
-    }
-  });
-  Search_Input.addEventListener("input",()=>{
-    if(Quick_Search.value!==Search_Input.value)Quick_Search.value=Search_Input.value;
-  });
-  Right.append(Quick_Search);
+  Right.append(Setup_Quick_Search(Quick_Search,Search_Input));
   Nav.append(Links,Right);
   document.querySelector(".Site_Bar").after(Nav);
   return Nav;
@@ -131,6 +113,7 @@ function Collect_View() {
     range:document.getElementById("Trend_Window")?.value || "recent",
     search:Search_Input.value,
     sort:Sort_Select.value,
+    min:Minimum_Count.value,
     compare:Country_Selects.map(Selector=>Selector.value).filter(Boolean).slice(0,4),
     period:Compare_Period,
   };
@@ -143,6 +126,7 @@ function View_Url(View) {
   if(View.range!=="recent")Target.searchParams.set("range",View.range);
   if(View.search)Target.searchParams.set("q",View.search);
   if(View.sort!=="largest")Target.searchParams.set("sort",View.sort);
+  if(View.min&&View.min!=="0")Target.searchParams.set("min",View.min);
   if(View.compare.length)Target.searchParams.set("compare",View.compare.join(","));
   if(View.period!=="recent")Target.searchParams.set("period",View.period);
   return Target.href;
@@ -200,10 +184,11 @@ function Apply_View(View) {
     Search_Input.value=View.search.slice(0,70);
     Search_Input.dispatchEvent(new Event("input"));
   }
-  if(["largest","smallest","name","rising","falling"].includes(View.sort)){
+  if(["largest","smallest","name","rising","falling","per-million"].includes(View.sort)){
     Sort_Select.value=View.sort;
     Sort_Select.dispatchEvent(new Event("change"));
   }
+  if(["0","25","100","500","1000"].includes(String(View.min))){Minimum_Count.value=String(View.min);Minimum_Count.dispatchEvent(new Event("change"));}
   if(Array.isArray(View.compare)) {
     Selected_Region_Codes.splice(0,Selected_Region_Codes.length,...View.compare
       .filter(Code=>typeof Code==="string"&&/^[A-Z]{2}$/.test(Code)).slice(0,4));
@@ -219,14 +204,15 @@ function Restore_From_Url() {
   if(Has_Initialized_View)return;
   Has_Initialized_View=true;
   const Params=new URLSearchParams(location.search);
-  if(!["pool","top","range","q","compare","period","sort"].some(Key=>Params.has(Key)))return;
+  if(!["pool","top","range","q","compare","period","sort","min"].some(Key=>Params.has(Key)))return;
   Apply_View({
     pool:Params.get("pool")||"Adult",
     top:Params.get("top")||"25",
     range:Params.get("range")||"recent",
     search:Params.get("q")||"",
     sort:Params.get("sort")||"largest",
-    compare:(Params.get("compare")||"").split(",").filter(Boolean),
+    min:Params.get("min")||"0",
+    compare:Params.has("compare")?(Params.get("compare")||"").split(",").filter(Boolean):undefined,
     period:Params.get("period")||"recent",
   });
 }
@@ -263,6 +249,7 @@ function Create_Compare() {
   const Results=Element("div","Compare_Results");
   Results.id="Compare_Results";
   Body.append(Description,Toolbar,Context,Results);
+  Render_Comparison_History=Create_Comparison_History(Body,Panel);
   Panel.append(Summary,Body);
   document.querySelector(".Content_Grid").after(Panel);
 
@@ -292,7 +279,14 @@ function Create_Compare() {
 
 function Refresh_Compare() {
   const Country_Rows=window.CountryPulse_Data?.Country_Rows||[];
-  const Choices=[...Country_Rows].sort((First,Second)=>First.Name.localeCompare(Second.Name));
+  const Choices=[...Country_Rows];
+  for(const Code of Selected_Region_Codes){
+    if(!Choices.some(Row=>Row.Code===Code)){
+      let Name=Code;try{Name=new Intl.DisplayNames(["en"],{type:"region"}).of(Code)||Code;}catch{}
+      Choices.push({Code,Name});
+    }
+  }
+  Choices.sort((First,Second)=>First.Name.localeCompare(Second.Name));
   for(let Index=0;Index<Country_Selects.length;Index++){
     const Selector=Country_Selects[Index];
     const Selected=Selected_Region_Codes[Index]||"";
@@ -314,14 +308,15 @@ function Render_Compare() {
   if(!Container||!Context)return;
   Container.replaceChildren();
   const Reading=window.CountryPulse_Data;
-  const Codes=Country_Selects.map(Selector=>Selector.value).filter(Boolean);
+  const Codes=[...new Set(Country_Selects.map(Selector=>Selector.value).filter(Boolean))];
+  Render_Comparison_History(Saved_History,Reading?.Room||document.querySelector(".Pool_Tab[aria-checked=true]")?.dataset.room||"Adult",Codes);
   if(!Reading?.Country_Rows?.length) {
     Container.append(Element("div","Compare_Empty","Country comparison is unavailable until a live or saved reading loads."));
     Context.textContent="No verified country reading";
     return;
   }
   const Compare=Compare_Countries(Reading.Country_Rows,Saved_History,Reading.Room,Reading.Observed_At,Compare_Period,Codes);
-  Context.textContent=(Reading.Observation_Mode==="live"?"Live-reported":"Saved snapshot")+
+  Context.textContent=(Reading.Observation_Mode==="live"?"Live-reported":Reading.Observation_Mode==="previous"?"Previous live reading":"Saved snapshot")+
     " · "+Reading.Room+" · "+new Date(Reading.Observed_At*1000).toLocaleString()+" · "+Compare_Period;
   if(Compare.length<2){
     Container.append(Element("div","Compare_Empty","Choose two to four countries to compare."));
@@ -366,6 +361,7 @@ function Setup() {
   Create_Quick_Navigation();
   Create_Compare();
   Create_View_Actions();
+  Create_Collection_Panel(document.querySelector(".History_Strip"));
   window.addEventListener("countrypulse:data",Update_Compare_On_Reading);
   window.addEventListener("countrypulse:history",(Event_Object)=>{
     Saved_History=Event_Object.detail.Historical_Snapshots||[];
@@ -379,6 +375,8 @@ function Setup() {
     Refresh_Compare();
   });
   Restore_From_Url();
+  const Deep_Country=new URLSearchParams(location.search).get("country");
+  if(/^[A-Z]{2}$/.test(Deep_Country||""))window.dispatchEvent(new CustomEvent("countrypulse:open-country",{detail:{Code:Deep_Country}}));
   if(window.CountryPulse_Data)Refresh_Compare();
   if(window.CountryPulse_History?.length)Saved_History=window.CountryPulse_History;
 

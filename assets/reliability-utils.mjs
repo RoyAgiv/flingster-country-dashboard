@@ -2,12 +2,12 @@ import { Get_Pool_Reading } from "./trends-utils.mjs";
 
 export const Supported_Pools = ["Adult", "Default", "Combined"];
 
-export function Select_Latest_Saved_Reading(Historical_Snapshots, Pool_Name) {
+export function Select_Latest_Saved_Reading(Historical_Snapshots, Pool_Name, Now_Seconds = Math.floor(Date.now()/1000)) {
   if (!Supported_Pools.includes(Pool_Name) || !Array.isArray(Historical_Snapshots)) return null;
   const Ordered = [...Historical_Snapshots].sort((First, Second) => Second.t - First.t);
   for (const Snapshot of Ordered) {
     const Reading = Get_Pool_Reading(Snapshot, Pool_Name);
-    if (!Reading || !Number.isSafeInteger(Reading.t) || Reading.t <= 0 ||
+    if (!Reading || !Number.isSafeInteger(Reading.t) || Reading.t <= 0 || Reading.t > Now_Seconds + 60 ||
         !Number.isSafeInteger(Reading.n) || Reading.n <= 0) continue;
     const Countries = Object.entries(Reading.c)
       .filter(([Code, Count]) => /^[A-Z]{2}$/.test(Code) && Number.isSafeInteger(Count) && Count >= 0);

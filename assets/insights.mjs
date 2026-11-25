@@ -1,5 +1,7 @@
 import { Aggregate_Hourly, Compare_Day_Over_Day, Calculate_Observed_Peak } from "./insights-utils.mjs";
 import { Get_Pool_Snapshots, Get_Pool_Reading, Calculate_Weekend_Average } from "./trends-utils.mjs";
+import { Age_Label } from "./reliability-utils.mjs";
+import { Calculate_Thirty_Minute_Changes, Compute_Collection_Health } from "./country-table-metrics.mjs";
 import { Get_Country_Time_Zones } from "./country-timezones.mjs";
 import { Render_Country_Clocks, Refresh_Country_Clocks, Render_Interactive_History, Render_Interactive_Hours } from "./history-explorer.mjs";
 
@@ -65,11 +67,30 @@ function Render_Favorites() {
     Container.append(Hint);
     return;
   }
+  const Reading=window.CountryPulse_Data;
+  const Matching=Reading?.Room===Selected_Pool?Reading:null;
+  const Changes=Matching?Calculate_Thirty_Minute_Changes(Matching.Country_Rows,Historical_Snapshots,
+    Selected_Pool,Matching.Observed_At).Changes:new Map();
   for (const Country_Code of Favorite_Country_Codes) {
     const Button = document.createElement("button");
     Button.type = "button";
     Button.className = "Pinned_Row";
-    Button.textContent = Country_Flag(Country_Code) + " " + Country_Name(Country_Code);
+    const Name=document.createElement("span");
+    Name.textContent=Country_Flag(Country_Code)+" "+Country_Name(Country_Code);
+    const Count=document.createElement("strong");
+    const Current=Matching?.Country_Rows.find(Row=>Row.Code===Country_Code);
+    Count.textContent=Current?Format_Number.format(Current.Count):"—";
+    const Change=Changes.get(Country_Code);
+    Button.append(Name,Count);
+    if(Change){
+      const Delta=document.createElement("small");
+      Delta.textContent=(Change.Difference>0?"+":"")+Format_Number.format(Change.Difference);
+      Delta.dataset.direction=Change.Difference>0?"up":Change.Difference<0?"down":"flat";
+      Button.append(Delta);
+    }
+    Button.title=(!Current?"No current reading":Matching?.Observation_Mode==="live"?"Live reported":Matching?.Observation_Mode==="previous"?"Previous live":"Saved")+
+      " · "+Selected_Pool+(Change?" · change vs comparable half-hour reading":" · no half-hour comparison");
+    Button.setAttribute("aria-label",Name.textContent+" · "+Count.textContent+(Change?" · change "+Change.Difference:""));
     Button.addEventListener("click", () => Open_Country(Country_Code));
     Container.append(Button);
   }
@@ -90,6 +111,7 @@ function Update_Star() {
   Button.textContent = Is_Pinned ? "★" : "☆";
   Button.title = Is_Pinned ? "Unpin country" : "Pin country for quick access";
   Button.setAttribute("aria-label", Button.title);
+  Button.setAttribute("aria-pressed",String(Is_Pinned));
 }
 
 function Toggle_Favorite() {
@@ -188,8 +210,13 @@ function Render_Country() {
   Set_Text("Insight_Name", Country_Name(Selected_Country_Code));
   Set_Text("Insight_Code", Selected_Country_Code + " · " + Selected_Pool + " · " + Percentage);
   Set_Text("Insight_Now", Country ? Format_Number.format(Country.Count) : "—");
+  const Mode=window.CountryPulse_Data?.Observation_Mode;
+  const Current_Time=window.CountryPulse_Data?.Observed_At;
   Set_Text("Insight_Now_Source", Country ?
-    (window.CountryPulse_Data?.Observation_Mode === "live" ? "Live feed" : "Saved reading") : "No current reading");
+    (Mode==="live"?"Live feed":Mode==="previous"?"Previous live reading":"Saved reading")+
+      (Number.isSafeInteger(Current_Time)?" · "+Age_Label(Current_Time,Now):"") : "No current reading");
+  Set_Text("Insight_Sticky_Name", Country_Flag(Selected_Country_Code)+" "+Country_Name(Selected_Country_Code));
+  Set_Text("Insight_Sticky_Value", Country?Format_Number.format(Country.Count)+" · "+Selected_Pool:Selected_Pool+" · no current reading");
   Set_Text("Insight_Average", Insight.Average_Count === null ? "—" : Format_Number.format(Insight.Average_Count));
   // A live reading can exceed the most recently saved high; show a comparable peak.
   const Peak_With_Live = Calculate_Observed_Peak(Country?.Count, Insight.Maximum_Count);
@@ -267,7 +294,7 @@ function Render_Country() {
 
 function Open_Country(Country_Code) {
   if (!/^[A-Z]{2}$/.test(Country_Code)) return;
-  Last_Selected_Focus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if(Country_Drawer.hidden)Last_Selected_Focus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   if(Selected_Country_Code!==Country_Code){
     Selected_Country_Zone=Get_Country_Time_Zones(Country_Code)[0]?.Zone||null;
   }
@@ -293,15 +320,17 @@ function Update_History_Status() {
   if (!History_Ready) return;
   const Element = document.getElementById("History_Coverage");
   if (!Historical_Snapshots.length) {
-    Element.textContent = "History starting soon · next collection within ~30 minutes";
+    Element.textContent = "No saved history yet · automatic collection is scheduled";
     return;
   }
-  const First = Historical_Snapshots[0];
-  const Last = Historical_Snapshots.at(-1);
-  const Hour_Difference = Math.max(0, Math.floor((Date.now() / 1000 - Last.t) / 3600));
-  const Age = Hour_Difference >= 1 ? (Hour_Difference + "h ago") :
-    (Math.max(0, Math.floor((Date.now() / 1000 - Last.t) / 60)) + "m ago");
-  Element.textContent = Historical_Snapshots.length + (Historical_Snapshots.length === 1 ? " snapshot" : " snapshots") + " · first " + Date_Short(First.t) + " · last " + Age;
+  const Health=Compute_Collection_Health(Historical_Snapshots,Math.floor(Date.now()/1000),Selected_Pool);
+  const Samples=Get_Pool_Snapshots(Historical_Snapshots,Selected_Pool);
+  const Beacon=History_Strip.querySelector(".History_Beacon");
+  Beacon.dataset.status=Health.Status;
+  Element.textContent=Health.Last_Time ?
+    Selected_Pool+" · "+Format_Number.format(Samples.length)+" saved · last "+Age_Label(Health.Last_Time)+
+      (Health.Status==="late"?" · collection delayed":"") :
+    Selected_Pool+" · no saved observations";
 }
 
 async function Load_History() {
@@ -318,6 +347,7 @@ async function Load_History() {
     window.CountryPulse_History = Historical_Snapshots;
     window.dispatchEvent(new CustomEvent("countrypulse:history", { detail: { Historical_Snapshots } }));
     Update_History_Status();
+    Render_Favorites();
     if (Selected_Country_Code) Render_Country();
   } catch (Error_Object) {
     const Element = document.getElementById("History_Coverage");
@@ -405,6 +435,28 @@ function Create_Interface() {
   Clock_Container.className="Insight_Clocks";
   Country_Drawer.querySelector(".Insight_Title_Row").after(Clock_Container);
 
+  const Sticky_Name=document.createElement("div");Sticky_Name.className="Insight_Sticky_Identity";
+  Sticky_Name.innerHTML='<strong id="Insight_Sticky_Name"></strong><small id="Insight_Sticky_Value"></small>';
+  const Top=Country_Drawer.querySelector(".Insight_Top");
+  Top.querySelector(".Insight_Eyebrow").replaceWith(Sticky_Name);
+  const Jump=document.createElement("nav");Jump.className="Insight_Jump";Jump.setAttribute("aria-label","Country detail sections");
+  for(const [Label,Id] of [["Activity","Insight_Trend"],["Best hours","Insight_Hours"],["Coverage","Insight_Coverage"]]){
+    const Link=document.createElement("button");Link.type="button";Link.textContent=Label;
+    Link.addEventListener("click",()=>document.getElementById(Id).closest(".Insight_Section").scrollIntoView({block:"start",behavior:"smooth"}));
+    Jump.append(Link);
+  }
+  Top.insertAdjacentElement("afterend",Jump);
+  const Share=document.createElement("button");Share.type="button";Share.className="Insight_Icon_Button Insight_Share";
+  Share.textContent="↗";Share.title="Copy link to this country";Share.setAttribute("aria-label","Copy link to this country");
+  Share.addEventListener("click",async()=>{
+    const Url=new URL(location.origin+location.pathname);
+    Url.searchParams.set("country",Selected_Country_Code);
+    if(Selected_Pool!=="Adult")Url.searchParams.set("pool",Selected_Pool);
+    try{await navigator.clipboard.writeText(Url.href);Share.textContent="✓";Share.title="Link copied";}
+    catch{prompt("Copy country link:",Url.href);}
+    setTimeout(()=>{Share.textContent="↗";Share.title="Copy link to this country";},1800);
+  });
+  Country_Drawer.querySelector(".Insight_Title_Row").append(Share);
   const Hour_Filter=document.createElement("select");
   Hour_Filter.id="Insight_Day_Filter";
   Hour_Filter.className="Insight_Day_Filter";
@@ -473,6 +525,7 @@ function Create_Interface() {
     Selected_Pool = Event_Object.detail.Room || "Adult";
     Current_Countries = Event_Object.detail.Country_Rows;
     Current_Total = Event_Object.detail.Online_Total;
+    Update_History_Status();Render_Favorites();
     if (Selected_Country_Code) Render_Country();
   });
   window.addEventListener("countrypulse:open-country", (Event_Object) => {
@@ -482,6 +535,7 @@ function Create_Interface() {
     Selected_Pool = Event_Object.detail?.Room || "Adult";
     Current_Countries = [];
     Current_Total = 0;
+    Update_History_Status();Render_Favorites();
     if (Selected_Country_Code) Render_Country();
   });
   Render_Favorites();

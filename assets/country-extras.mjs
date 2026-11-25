@@ -151,6 +151,7 @@ async function Load_Population_Data() {
     Population_By_Country = {};
     Population_Last_Updated = "";
   }
+  window.dispatchEvent(new CustomEvent("countrypulse:population",{detail:{By_Country:Population_By_Country}}));
   Update_Population();
 }
 

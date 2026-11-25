@@ -59,7 +59,7 @@ const Server = createServer(async (Request, Response) => {
 let Browser;
 try {
   await new Promise((Resolve, Reject) => Server.listen(0, "127.0.0.1", Error => Error ? Reject(Error) : Resolve()));
-  Browser = await chromium.launch({headless:true});
+  Browser = await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH}:{})});
   const Page = await Browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
   const Errors = [];
   Page.on("pageerror", Error => Errors.push(String(Error)));
@@ -84,6 +84,40 @@ try {
   Assert.ok((await Page.locator("#World_Latest").textContent()).match(/\d/));
   await Page.locator("#Quick_Search").fill("United States");
   await Page.waitForFunction(() => document.querySelectorAll("#Country_Table tr[data-country-code]").length === 1);
+  Assert.equal(await Page.locator('#Country_Search_Options [role="option"]').count(),1);
+  await Page.keyboard.press("ArrowDown");
+  Assert.equal(await Page.locator("#Quick_Search").getAttribute("aria-activedescendant"),"Country_Search_Option_0");
+  await Page.keyboard.press("Enter");
+  await Page.waitForFunction(()=>document.querySelector("#Insight_Sticky_Name")?.textContent?.includes("United States"));
+  await Page.getByRole("button",{name:"Pin country for quick access"}).click();
+  Assert.equal(await Page.locator(".Pinned_Row strong").count(),1);
+  Assert.ok((await Page.locator("#Insight_Sticky_Value").textContent()).includes("Default"));
+  await Page.getByRole("button",{name:"Close country insights"}).click();
+  await Page.locator("#Collection_Panel > summary").click();
+  await Page.waitForFunction(()=>document.querySelectorAll(".Collection_Row").length===3);
+  Assert.equal(await Page.locator(".Collection_Row").count(),3);
+  Assert.equal(await Page.locator(".Collection_Slot").count(),144);
+  Assert.ok(await Page.locator('.Collection_Slot[data-present="true"]').count()>0);
+  await Page.locator("#Country_Compare > summary").click();
+  await Page.waitForFunction(()=>document.querySelectorAll(".Compare_History_Stat").length>=2);
+  Assert.ok(await Page.locator("#Compare_History_Chart .Compare_History_Line").count()>0 || await Page.locator("#Compare_History_Chart circle").count()>0);
+  await Page.locator("#Compare_History_Metric").selectOption("share");
+  Assert.ok((await Page.locator("#Compare_History_Chart title").textContent()).includes("share"));
+  Assert.equal(await Page.getByRole("button",{name:"History CSV"}).isEnabled(),true);
+  await Page.locator("#Compare_History_Range").selectOption("24h");
+  Assert.equal(await Page.locator("#Compare_History_Range").inputValue(),"24h");
+  await Page.locator("#Sort_Select").selectOption("per-million");
+  await Page.waitForFunction(()=>document.querySelector("#Table_Share_Head")?.textContent==="Per million" &&
+    [...document.querySelectorAll("#Country_Table tr[data-country-code] td:nth-child(6)")].some(Cell=>/\d/.test(Cell.textContent)));
+  await Page.locator("#Minimum_Count").selectOption("1000");
+  Assert.equal(await Page.locator("#Country_Table tr[data-country-code]").count(),0);
+  Assert.equal(await Page.locator("#Export_Button").isEnabled(),false);
+  await Page.locator("#Minimum_Count").selectOption("0");
+  const Download_Promise=Page.waitForEvent("download");
+  await Page.locator("#Export_Button").click();
+  const Csv=await readFile(await (await Download_Promise).path(),"utf8");
+  Assert.ok(Csv.includes("Reported per million")&&Csv.includes('"US"')&&Csv.includes('"Default"'));
+  Assert.equal(Csv.split("\r\n").length,2);
   const More = Page.locator(".Quick_Nav_More");
   Assert.equal(await More.isVisible(), true);
   await More.locator("summary").click();
@@ -104,8 +138,13 @@ try {
       Width + "px: page-wide horizontal overflow " + JSON.stringify(Overflow));
     await Page.screenshot({path:resolve(Artifact_Dir, "dashboard-" + Width + ".png"), fullPage:false});
   }
+  // Country deep links work independently of a search or a pre-existing browser view.
+  await Page.goto("http://127.0.0.1:" + Server.address().port + "/?pool=Default&country=IL",{waitUntil:"domcontentloaded"});
+  await Page.waitForFunction(()=>document.querySelector("#Insight_Sticky_Name")?.textContent?.includes("Israel") &&
+    document.querySelector("#Insight_Sticky_Value")?.textContent?.includes("Default"));
+  Assert.equal(await Page.locator("#Insight_Close").isVisible(),true);
   Assert.deepEqual(Errors, [], "unexpected JavaScript exceptions: " + Errors.join("; "));
-  console.log("Browser smoke passed: data fallback, gap-aware chart, keyboard, pools, search, lazy network and 1440/768/390px layouts.");
+  console.log("Browser smoke passed: data fallback, gap-aware charts, keyboard country search, watchlist, pool coverage, filtered CSV, population ranking, country deep links, lazy network and 1440/768/390px layouts.");
 } finally {
   if (Browser) await Browser.close();
   await new Promise(Resolve => Server.close(Resolve));

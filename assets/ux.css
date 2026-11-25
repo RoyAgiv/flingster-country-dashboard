@@ -152,3 +152,90 @@
  #countries th:nth-child(4),#countries td:nth-child(4){text-align:right}
  #countries .Table_Empty{display:table-cell}
 }
+
+/* Direct country navigation and a compact, inspectable collection status. */
+.Country_Search_Wrap{position:relative;min-width:115px;width:min(100%,245px)}
+.Country_Search_Wrap .Quick_Search{width:100%;max-width:none;padding-right:10px!important}
+.Country_Search_Options{position:absolute;right:0;top:calc(100% + 7px);width:min(340px,calc(100vw - 28px));max-height:370px;overflow-y:auto;background:#142b3a;border:1px solid #426879;border-radius:12px;padding:5px;box-shadow:0 15px 35px #0009;z-index:80}
+.Country_Search_Options[hidden]{display:none}
+.Country_Search_Option{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px 8px;border-radius:7px;font-size:13px;color:#d9ecf0;cursor:pointer}
+.Country_Search_Option:hover,.Country_Search_Option[aria-selected=true]{background:#29505a;box-shadow:inset 2px 0 #82e8d5}
+.Country_Search_Name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.Country_Search_Option small{font-size:10px;color:#a0b6c3}
+.Country_Search_Option strong{font-size:13px;color:#91e8d5;font-variant-numeric:tabular-nums}
+.Country_Search_Empty{font-size:12px;padding:15px;color:#b2c5cf}
+.Collection_Panel{flex-basis:100%;min-width:0;border-top:1px solid #294351;padding-top:10px;font-size:12px}
+.Collection_Summary{cursor:pointer;color:#b9d4db;font-weight:700;line-height:1.5}
+.Collection_Summary:hover{color:#a2f7e6}
+.Collection_Inside{padding:12px 0 2px}
+.Collection_Head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}
+.Collection_Head p{max-width:600px}
+.Collection_Rows{display:grid;gap:12px}
+.Collection_Row{display:grid;grid-template-columns:110px minmax(0,1fr) 165px;gap:12px;align-items:center}
+.Collection_Row_Label,.Collection_Row_Stats{display:grid;gap:3px;font-variant-numeric:tabular-nums;color:#ddf0f0;min-width:0}
+.Collection_Row_Label small,.Collection_Row_Stats small,.Collection_Foot{font-size:11px;line-height:1.45;color:#9eb8c3}
+.Collection_Row_Stats{text-align:right}
+.Collection_Slots{display:grid;grid-template-columns:repeat(48,minmax(0,1fr));gap:2px}
+.Collection_Slot{height:16px;border-radius:2px;background:#263c4c;border:1px solid #38505e}
+.Collection_Slot[data-present=true]{background:#62c8b9;border-color:#80dfcb}
+.Collection_Foot{margin-top:12px}
+.Collection_Panel summary:focus-visible,.Country_Search_Wrap input:focus-visible{outline:2px solid #8de6d5;outline-offset:2px}
+
+/* Multi-country historical chart, with one axis and distinct line styles. */
+.Compare_History{border-top:1px solid #335161;margin-top:18px;padding-top:16px}
+.Compare_History_Header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.Compare_History_Header h3{font-size:15px;margin:0 0 4px}
+.Compare_History_Controls{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.Compare_History_Controls select{font-size:12px;min-height:34px;padding:6px 26px 6px 8px}
+.Compare_History_Controls button{min-height:34px}
+.Compare_History_Legend{display:flex;flex-wrap:wrap;gap:12px;margin:13px 0 5px}
+.Compare_History_Key{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#d7e8ec}
+.Compare_History_Key i{width:17px;height:4px;border-radius:3px}
+#Compare_History_Chart{width:100%;height:auto;max-height:320px;display:block;margin-bottom:8px}
+#Compare_History_Chart[hidden],.Compare_History [hidden]{display:none!important}
+.Compare_Grid_Line{stroke:#335160;stroke-width:1;stroke-dasharray:3 4}
+.Compare_Axis{font-size:10px;fill:#b2cad3;font-variant-numeric:tabular-nums}
+.Compare_History_Line{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.Compare_History_Details{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.Compare_History_Stat{padding:10px;border:1px solid #31515d;border-radius:9px;background:#102432;display:grid;gap:5px;min-width:0}
+.Compare_History_Stat strong{font-size:12px;color:#d9f1ef}
+.Compare_History_Stat span,.Compare_History_Stat small{font-size:11px;line-height:1.4;color:#a7c1ca}
+.Compare_History_Stat span{color:#d0e1e3;font-variant-numeric:tabular-nums}
+.Compare_History .Compare_Empty{margin-top:12px}
+@media(max-width:980px){
+ .Country_Search_Wrap{width:min(100%,260px)}
+ .Country_Search_Options{left:0;right:auto}
+ .Compare_History_Details{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ .Collection_Row{grid-template-columns:minmax(0,1fr) auto;gap:6px}
+ .Collection_Slots{grid-column:1/-1;grid-row:2;gap:1px}
+ .Collection_Row_Stats{grid-column:2;grid-row:1}
+ .Collection_Slot{height:12px}
+ .Collection_Head{align-items:flex-start}
+ .Collection_Head .Secondary_Button{white-space:nowrap;font-size:11px}
+ .Country_Search_Wrap{width:min(100%,220px)}
+ .Country_Search_Options{max-height:300px}
+ .Compare_History_Controls{width:100%}
+ .Compare_History_Controls select{flex:1;min-width:0}
+ .Compare_History_Details{gap:6px}
+ .Compare_History_Stat{padding:8px}
+ .Compare_Axis{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+#countries .Controls{flex-wrap:wrap}
+#countries #Minimum_Count{min-width:110px}
+@media(max-width:620px){
+ #countries .Controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;width:100%}
+ #countries .Controls .Search_Wrap{grid-column:1/-1;width:100%}
+ #countries .Controls select{width:100%;min-width:0!important}
+ #countries .Controls #Export_Button{grid-column:1/-1}
+}
+
+@media(max-width:620px){
+ #countries table[data-ranking-metric=population] th:nth-child(4),
+ #countries table[data-ranking-metric=population] td:nth-child(4){display:none}
+ #countries table[data-ranking-metric=population] th:nth-child(6),
+ #countries table[data-ranking-metric=population] td:nth-child(6){display:table-cell;width:28%;text-align:right}
+}

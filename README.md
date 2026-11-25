@@ -164,3 +164,12 @@ Historical chart comparisons and peak-hour conclusions improve only after enough
 ### Collection recovery and isolation
 
 The scheduled capture runs only deterministic core collector tests before requesting live data. UI and optional network regressions run independently on code changes; a partially unavailable brand is not a test failure. The primary history is committed before optional network and population refreshes. A current country comparison requires an aligned same-pool reading from the prior day; a stale saved comparison is never presented as yesterday's live change. Health is specific to the selected pool, and missing intervals are not backfilled.
+
+### Dashboard productivity tools
+
+- Quick country search supports accent-insensitive suggestions, current counts, arrow keys, Enter, Escape and the / or Ctrl/Cmd+K shortcut. Country details can be shared directly using a country-and-pool URL.
+- Pinned countries show latest reported counts and comparable half-hour changes; the country modal retains its identity and close control while scrolling and offers section shortcuts.
+- Expand Collection health for all three pools: 48 completed UTC half-hour slots and seven-day coverage, with local-time tooltips. Missing samples are not zeroes; previous browser-only observations are never counted as scheduled history.
+- Compare 2–4 countries across 24 hours, 7 days or 30 days, using one shared count or world-share scale, separate line styles, real saved timestamps, gap breaks, averages, peaks and CSV export. Missing country observations are omitted, never interpolated.
+
+- Country rankings support minimum-count filtering and population-adjusted sorting (reported per million, not verified prevalence). Export view CSV follows the displayed filters and sorting and includes pool, provenance and population context.
