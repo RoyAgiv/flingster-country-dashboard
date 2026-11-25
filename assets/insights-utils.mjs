@@ -45,13 +45,15 @@ export function Aggregate_Hourly(Snapshots, Country_Code, Timezone, Days = 7, No
   };
 }
 
-export function Compare_Day_Over_Day(Snapshots, Country_Code) {
+export function Compare_Day_Over_Day(Snapshots, Country_Code, Current_Observation = null) {
   const Filtered = Snapshots
     .filter((Snapshot) => Snapshot?.c && Object.hasOwn(Snapshot.c, Country_Code) &&
       Number.isSafeInteger(Snapshot.c[Country_Code]))
     .sort((First, Second) => First.t - Second.t);
-  if (Filtered.length < 2) return null;
-  const Latest = Filtered.at(-1);
+  if (!Filtered.length) return null;
+  const Latest = Current_Observation ?? Filtered.at(-1);
+  if (!Number.isSafeInteger(Latest?.t) || !Number.isSafeInteger(Latest.c?.[Country_Code]) ||
+      Latest.c[Country_Code] < 0) return null;
   const Target = Latest.t - 86400;
   const Previous = Filtered.reduce((Best, Sample) => {
     const Difference = Math.abs(Sample.t - Target);

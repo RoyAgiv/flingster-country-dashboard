@@ -119,7 +119,7 @@ function Render_Daily_History(Stats,Zone) {
       Mean.style.left=Scale(Day.Average)+"%";
       Track.append(Band,Mean);Range.append(Track);
     }else{
-      Range.textContent="No readings";Row.className="History_Daily_Missing";
+      Range.textContent="No saved readings";Row.className="History_Daily_Missing";
     }
     Row.insertCell().textContent=Day.Average===null?"—":Number_Format.format(Day.Average);
     Row.insertCell().textContent=Number_Format.format(Day.Readings);

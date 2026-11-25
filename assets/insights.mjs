@@ -200,9 +200,24 @@ function Render_Country() {
     .querySelector(".Insight_Stat_Foot");
   Peak_Foot.textContent = "Saved history + latest "+(
     window.CountryPulse_Data?.Observation_Mode==="live"?"live":"reported")+" observation";
-  Set_Text("Insight_Chart_Subtitle", Insight.Sample_Count + " saved readings · " + Insight.Observation_Days + " days observed");
-  const Day_Change = Compare_Day_Over_Day(Insight.Samples.map((Sample) => ({ t: Sample.t, c: { [Selected_Country_Code]: Sample.Count } })), Selected_Country_Code);
-  Set_Text("Insight_Day_Change", Day_Change === null ? "More history needed" : ((Day_Change > 0 ? "+" : "") + Day_Change + "% vs same time yesterday"));
+  const Last_Sample = Insight.Samples.at(-1);
+  const Age_Minutes = Last_Sample ? Math.max(0, Math.floor((Now - Last_Sample.t) / 60)) : null;
+  const History_Status = Age_Minutes === null ? "no saved readings in this period" :
+    Age_Minutes > 65 ? "collection delayed · last saved " +
+      (Age_Minutes >= 1440 ? Math.floor(Age_Minutes / 1440) + "d ago" :
+        Math.floor(Age_Minutes / 60) + "h " + Age_Minutes % 60 + "m ago") :
+    "last saved " + Age_Minutes + "m ago";
+  Set_Text("Insight_Chart_Subtitle", Insight.Sample_Count + " saved readings · " +
+    Insight.Observation_Days + " days observed · " + History_Status);
+  const Observed_At = window.CountryPulse_Data?.Observed_At;
+  const Current_Observation = Country && Number.isSafeInteger(Observed_At) &&
+    Observed_At >= Now - 65 * 60 && Observed_At <= Now + 60 ?
+    { t: Observed_At, c: { [Selected_Country_Code]: Country.Count } } : null;
+  const Day_Change = Current_Observation ? Compare_Day_Over_Day(
+    Get_Pool_Snapshots(Historical_Snapshots, Selected_Pool),
+    Selected_Country_Code, Current_Observation) : null;
+  Set_Text("Insight_Day_Change", Day_Change === null ? "No comparable reading from yesterday" :
+    ((Day_Change > 0 ? "+" : "") + Day_Change + "% vs same time yesterday"));
 
   const Coverage_Target = Selected_Period * 48;
   const Coverage = Math.min(100, Math.round(Insight.Sample_Count / Coverage_Target * 1000) / 10);

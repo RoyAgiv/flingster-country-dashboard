@@ -387,9 +387,9 @@
     function Render_Collection_Health(){
       const Badge=document.getElementById("Collection_Health");
       if(!Badge)return;
-      const Health=Compute_Collection_Health(Saved_History);
+      const Health=Compute_Collection_Health(Saved_History, Math.floor(Date.now() / 1000), Selected_Room);
       Badge.dataset.status=Health.Status;
-      Badge.textContent=Health.Last_Time ? "Saved "+Age_Label(Health.Last_Time)+
+      Badge.textContent=Health.Last_Time ? (Health.Status==="late"?"Collection delayed · saved ":"Saved ")+Age_Label(Health.Last_Time)+
         (Health.Gap_Minutes ? " · last gap "+Health.Gap_Minutes+"m" : "") :
         "Saved collection not available";
       Badge.title=Health.Last_Time ?

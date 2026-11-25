@@ -112,3 +112,12 @@ Test("table, CSV export and launchd dispatch remain wired without secrets", asyn
   Assert.match(Plist, /<integer>57<\/integer>/);
   Assert.doesNotMatch(Script, /gh auth token|GITHUB_TOKEN|ghp_/);
 });
+
+Test("collection health tracks the selected pool, not an unrelated fresh Adult reading", () => {
+  const Now = 1800003600;
+  const Old = History_Reading(Now - 86400, {US:50}, {US:10}, {US:60});
+  const New = History_Reading(Now - 60, {US:70});
+  Assert.equal(Compute_Collection_Health([Old,New],Now,"Adult").Status,"recent");
+  Assert.equal(Compute_Collection_Health([Old,New],Now,"Default").Status,"late");
+  Assert.equal(Compute_Collection_Health([New],Now,"Combined").Status,"unknown");
+});

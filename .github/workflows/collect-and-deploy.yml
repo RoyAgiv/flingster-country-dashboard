@@ -17,7 +17,7 @@ concurrency:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     permissions:
       contents: write
     steps:
@@ -31,8 +31,8 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Validate the collector and historical calculations
-        run: node --test tests/*.test.mjs
+      - name: Validate core collector and data integrity
+        run: node --test tests/collector.test.mjs tests/provider-failover.test.mjs
 
       - name: Capture one public country-count snapshot
         id: capture
@@ -47,11 +47,24 @@ jobs:
           echo "### CountryPulse source warning" >> "$GITHUB_STEP_SUMMARY"
           echo "This capture did not produce valid country statistics. Existing saved history is preserved; check the freshness badge and collector logs." >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Save primary history immediately
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/history.json; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/history.json
+          git commit -m "Record country counts ($(date -u +%Y-%m-%dT%H:%MZ))"
+          git push origin HEAD:main
+
       - name: Capture brand network activity and daily configuration
+        timeout-minutes: 3
         run: node scripts/collect-network.mjs
         continue-on-error: true
 
       - name: Refresh World Bank population when older than 30 days
+        timeout-minutes: 1
         run: node scripts/update-population.mjs
         continue-on-error: true
 

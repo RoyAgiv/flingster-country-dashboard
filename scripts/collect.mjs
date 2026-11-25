@@ -155,6 +155,17 @@ export async function Verify_Flingster_Response_Identity(Fetch_Function = fetch)
 export async function Collect_Once() {
   const Raw_History = await readFile(History_Path, "utf8");
   const Existing_History = JSON.parse(Raw_History);
+  if (Existing_History?.schema !== 1 || !Array.isArray(Existing_History.snapshots)) {
+    throw Error("Unsupported country history schema");
+  }
+  const Now = Math.floor(Date.now() / 1000);
+  const Latest = Existing_History.snapshots.reduce((Max, Snapshot) =>
+    Number.isSafeInteger(Snapshot?.t) && Snapshot.t <= Now + 60 ? Math.max(Max, Snapshot.t) : Max, 0);
+  if (Latest && (Now - Latest < Min_Snapshot_Gap_Seconds ||
+      Math.floor(Now / 1800) === Math.floor(Latest / 1800))) {
+    console.log("SKIPPED: Snapshot already captured in the current half-hour window");
+    return false;
+  }
   // A valid HTTP status alone is not identity proof: reject the ALL:0, Members:3 fallback.
   const Verified_Identity = await Verify_Flingster_Response_Identity();
   // One collector for every pool. No per-country proxies or platform-specific aliases.

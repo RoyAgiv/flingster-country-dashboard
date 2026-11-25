@@ -8,6 +8,14 @@ on:
       - 'scripts/browser-smoke.mjs'
       - 'tests/**'
       - '.github/workflows/ui-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:

@@ -50,8 +50,9 @@ export function Get_Representative_Country_Time(Country_Code, Now_Milliseconds =
   return { ...Clock, City: Zone_Record.City };
 }
 
-export function Compute_Collection_Health(Historical_Snapshots, Now_Seconds = Math.floor(Date.now() / 1000)) {
-  const Recent_Times = (Array.isArray(Historical_Snapshots) ? Historical_Snapshots : [])
+export function Compute_Collection_Health(Historical_Snapshots, Now_Seconds = Math.floor(Date.now() / 1000), Pool_Name = null) {
+  const Samples = Pool_Name ? Get_Pool_Snapshots(Historical_Snapshots, Pool_Name) : Historical_Snapshots;
+  const Recent_Times = (Array.isArray(Samples) ? Samples : [])
     .map((Snapshot) => Snapshot?.t)
     .filter((Time) => Number.isSafeInteger(Time) && Time > 0 && Time <= Now_Seconds + 60)
     .sort((First, Second) => First - Second);

@@ -160,3 +160,7 @@ Flingster and DirtyRoulette currently use the same Adult country statistics sour
 Unusual repeated multiples of 7 and 12 are strong evidence of numerical adjustment or coarse scaling. Country counts, trends, averages, and forecasts should remain explicitly marked **provider-reported estimates**.
 
 Historical chart comparisons and peak-hour conclusions improve only after enough saved samples and multiple days of coverage. No fabricated values are displayed for missing data.
+
+### Collection recovery and isolation
+
+The scheduled capture runs only deterministic core collector tests before requesting live data. UI and optional network regressions run independently on code changes; a partially unavailable brand is not a test failure. The primary history is committed before optional network and population refreshes. A current country comparison requires an aligned same-pool reading from the prior day; a stale saved comparison is never presented as yesterday's live change. Health is specific to the selected pool, and missing intervals are not backfilled.

@@ -68,3 +68,11 @@ Test("current live value cannot exceed the displayed highest observed", () => {
   Assert.equal(Calculate_Observed_Peak(undefined, 0), 0);
   Assert.equal(Calculate_Observed_Peak(undefined, undefined), null);
 });
+
+Test("day change is anchored to the displayed observation, not stale historical endpoints", () => {
+  const Old = [Snapshot("2026-11-19T02:00:00Z",100),Snapshot("2026-11-20T02:00:00Z",125)];
+  const Live = Snapshot("2026-11-25T16:00:00Z",308);
+  Assert.equal(Compare_Day_Over_Day(Old,"IL",Live),null);
+  const Yesterday = Snapshot("2026-11-24T16:00:00Z",300);
+  Assert.equal(Compare_Day_Over_Day([...Old,Yesterday],"IL",Live),3);
+});

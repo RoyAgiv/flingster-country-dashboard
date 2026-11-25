@@ -1,7 +1,7 @@
 import Test from "node:test";
 import Assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { Known_Brands, Shared_Alias, Find_Exact_Dataset_Groups } from "../assets/network-utils.mjs";
+import { Known_Brands, Shared_Alias, Find_Exact_Dataset_Groups, Rewards_Fields } from "../assets/network-utils.mjs";
 
 const Read_Repo_File = (Name) => readFile(new URL("../"+Name,import.meta.url),"utf8");
 
@@ -58,14 +58,21 @@ Test("sampled brands are grouped only by a full identical geographic fingerprint
   Assert.ok(Groups.every((Group)=>Group.length>1));
 });
 
-Test("daily settings exclude visitor country and safely record Chatspin rewards",async()=>{
+Test("daily settings allow incomplete brand availability without leaking visitor identity",async()=>{
   const Network = JSON.parse(await Read_Repo_File("data/network.json"));
-  const Current = Network.config_history.at(-1);
-  Assert.ok(Current && Current.brands?.flingster);
-  Assert.equal(Current.brands.flingster.Name,"Flingster");
-  Assert.equal(Current.brands.flingster.UserCountry,undefined);
-  const Chatspin=Current.brands.chatspin;
-  Assert.equal(Chatspin?.Name,"Chatspin");
-  Assert.equal(Chatspin?.TokensEnabled,true);
-  Assert.equal(Chatspin?.Rewards?.DailyLoginBonus,"25");
+  Assert.ok(Array.isArray(Network.config_history));
+  for (const Entry of Network.config_history) {
+    Assert.ok(Number.isSafeInteger(Entry.t) && /^\d{4}-\d{2}-\d{2}$/.test(Entry.day));
+    Assert.ok(Object.keys(Entry.brands).length >= 2);
+    for (const [Id, Config] of Object.entries(Entry.brands)) {
+      const Brand = Known_Brands.find(Item => Item.Id === Id);
+      Assert.ok(Brand, "Unknown brand " + Id);
+      Assert.equal(Config.Name, Brand.Expected_Name);
+      Assert.equal(Config.UserCountry, undefined);
+      if (Config.Rewards) {
+        Assert.ok(Object.keys(Config.Rewards).every(Key =>
+          Rewards_Fields.includes(Key)));
+      }
+    }
+  }
 });
